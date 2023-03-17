@@ -29,3 +29,12 @@ jobs:
         run: |
           yarn install
           tsc
+  test:
+    runs-on: ubunut-latest
+    steps:
+      - uses: actions/checkout@v2
+    
+      - name: node server run, yarn test
+        run: |
+          node dist/index.js &
+          yarn test
