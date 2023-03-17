@@ -4,10 +4,10 @@ name: CI (test)
 
 # Controls when the workflow will run
 on:
-  workflow_run:
-    workflows: ["CI (build)"]
-    types: 
-      - completed
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -28,5 +28,5 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Start server and run tests
         run: |
-          node dist/index.js
+          yarn start &
           yarn test
