@@ -32,5 +32,6 @@ jobs:
       - name: Start server 
         run: |
           yarn install
-          yarn start
+          yarn start &
+          sleep 5
           yarn test
