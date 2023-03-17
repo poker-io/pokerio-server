@@ -8,6 +8,7 @@
   "license": "MIT",
   "scripts": {
     "start": "tsc && node dist/index.js",
+    "build": "tsc",
     "test": "jest src/tests"
   },
   "devDependencies": {
