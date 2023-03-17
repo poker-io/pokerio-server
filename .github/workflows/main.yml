@@ -28,4 +28,4 @@ jobs:
       - name: yarn install, build typescript
         run: |
           yarn install
-          tsc
+          yarn build
