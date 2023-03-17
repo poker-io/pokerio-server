@@ -1,7 +1,7 @@
 import express from "express"
 
 const app = express()
-const port = 42069
+export const port = 42069
 
 app.get('/test', (req, res) => {
   res.send('Hello from typescript express!')
