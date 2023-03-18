@@ -1,6 +1,7 @@
 node_modules/
 .eslintrc.json
 .prettierignore
+.gitignore
 .prettierrc.json
 jest.config.js
 package.json
