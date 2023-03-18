@@ -32,7 +32,7 @@ jobs:
         run: |
           yarn install
           yarn start &
-          sleep 5
+          sleep 10
           yarn test
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
