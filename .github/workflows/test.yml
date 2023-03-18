@@ -35,4 +35,6 @@ jobs:
           sleep 10
           yarn test
       - name: Upload coverage reports to Codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         uses: codecov/codecov-action@v3
