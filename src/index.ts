@@ -1,4 +1,4 @@
-import express from "express"
+import express from 'express'
 
 const app = express()
 export const port = 42069
