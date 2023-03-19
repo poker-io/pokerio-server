@@ -12,9 +12,9 @@ Run `yarn install`
 
 ## Running
 
-Run `yarn start`. 
+Run `yarn start`.
 
 ## Testing
 
-We use Jest for testing. To run it, simply type `yarn test`. 
+We use Jest for testing. To run it, simply type `yarn test`.
 Make sure your Node's version is > v18 (`nvm install v18.15.0` to install appropriate version).
