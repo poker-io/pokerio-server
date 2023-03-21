@@ -27,6 +27,11 @@ jobs:
         with:
           node-version: 18
 
+      - name: add firebase service account json file
+        env:
+          JSON: ${{ secrets.FIREBASE_SERVICEACCOUNTJSON }}
+        run: echo $JSON > src/serviceAccount.json
+         
       # Runs a set of commands using the runners shell
       - name: Start server
         run: |

@@ -2,7 +2,9 @@ import express from 'express'
 import admin from 'firebase-admin'
 import { readFileSync } from 'fs'
 
-const serviceAccount = JSON.parse(readFileSync('./src/serviceAccount.json', 'utf-8'))
+const serviceAccount = JSON.parse(
+  readFileSync('./src/serviceAccount.json', 'utf-8')
+)
 
 admin.initializeApp({
   credential: admin.credential.cert({
