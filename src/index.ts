@@ -1,4 +1,9 @@
 import express from 'express'
+import admin from 'firebase-admin'
+
+admin.initializeApp({
+  credential: admin.credential.applicationDefault(),
+})
 
 const app = express()
 export const port = 42069
