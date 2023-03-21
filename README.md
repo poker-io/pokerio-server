@@ -12,9 +12,7 @@ Run `yarn install`.
 
 ## Running
 
-First you have to add firebase service account json file in src/.
-
-Run `export GOOGLE_APPLICATION_CREDENTIALS="/path/to/project/src/your-service-account-file.json"`.
+First you have to add firebase service account json file in src/ as serviceAccount.json.
 
 Run `yarn start`.
 
