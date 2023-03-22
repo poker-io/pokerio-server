@@ -21,7 +21,6 @@ jobs:
           FILE: ${{ secrets.SECRETS_TS }}
         run: |
           echo $FILE > src/secrets.ts
-          cat src/secrets.ts
 
       - name: yarn install, build typescript
         run: |
