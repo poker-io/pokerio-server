@@ -1,11 +1,11 @@
 import oracledb, { type Connection } from 'oracledb'
-import { oraclePassword } from './secrets'
+import { oracleConnectionString, oraclePassword, oracleUser } from './secrets'
 
 export async function databaseConnect(): Promise<Connection> {
   return await oracledb.getConnection({
-    user: 'kw438800',
+    user: oracleUser,
     password: oraclePassword,
-    connectionString: 'labora.mimuw.edu.pl/LABS',
+    connectionString: oracleConnectionString,
   })
 }
 
