@@ -1,5 +1,5 @@
 import express from 'express'
-import { databaseInit } from './databaseConnection'
+import { databaseInit } from './databaseConnection.js'
 
 const app = express()
 export const port = 42069

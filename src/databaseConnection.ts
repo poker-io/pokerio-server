@@ -1,5 +1,9 @@
 import oracledb, { type Connection } from 'oracledb'
-import { oracleConnectionString, oraclePassword, oracleUser } from './secrets'
+import {
+  oracleConnectionString,
+  oraclePassword,
+  oracleUser,
+} from './secrets.js'
 
 export async function databaseConnect(): Promise<Connection> {
   return await oracledb.getConnection({
