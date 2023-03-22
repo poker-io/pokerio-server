@@ -18,4 +18,5 @@ databaseInit()
   .catch(() => {
     // Don't start the server in case of an error
     console.log('Failed to init database')
+    process.exit(1)
   })
