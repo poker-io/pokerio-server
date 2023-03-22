@@ -18,9 +18,8 @@ jobs:
 
       - name: Setup secrets
         env:
-          FILE: ${{ secrets.SECRET.TS }}
-        run: |
-          echo $FILE > src/secrets.ts
+          FILE: ${{ secrets.SECRETS_TS }}
+        run: echo $FILE > src/secrets.ts
 
       - name: yarn install, build typescript
         run: |
