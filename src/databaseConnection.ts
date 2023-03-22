@@ -16,6 +16,7 @@ export async function databaseConnect(): Promise<Connection> {
 export async function databaseInit(): Promise<void> {
   // Connect
   let connection: Connection | undefined
+  let success = true
 
   // Create the tables
   // This will fail if tables already exist, but we don't care
@@ -63,6 +64,7 @@ export async function databaseInit(): Promise<void> {
     }
   } catch (err) {
     console.error(err)
+    success = false
   } finally {
     if (connection !== undefined) {
       try {
@@ -71,6 +73,12 @@ export async function databaseInit(): Promise<void> {
         console.error(err)
       }
     }
+  }
+
+  if (success) {
+    await Promise.resolve()
+  } else {
+    await Promise.reject(new Error('Failed to connect to database'))
   }
 }
 
