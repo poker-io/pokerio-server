@@ -43,6 +43,9 @@
     "collectCoverageFrom": [
       "src/*.ts"
     ],
+    "coveragePathIgnorePatterns": [
+      "src/secrets.ts"
+    ],
     "preset": "ts-jest"
   }
 }
