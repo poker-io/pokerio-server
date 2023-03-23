@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    container: ghcr.io/oracle/oraclelinux8-instantclient:21
 
     steps:
       - uses: actions/checkout@v2
