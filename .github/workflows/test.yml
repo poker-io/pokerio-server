@@ -22,7 +22,6 @@ jobs:
           sudo apt install alien libaio1
           sudo alien -i instantclient.rpm
           export PATH=/usr/lib/oracle/21.9/client64/bin:$PATH
-          sqlplus
 
       - name: Setup secrets
         env:
