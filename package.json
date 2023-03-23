@@ -4,7 +4,6 @@
   "main": "src/index.ts",
   "repository": "git@github.com:poker-io/pokerio-server.git",
   "author": "Karol Wąsowski <wasowski02@protonmail.com>",
-  "type": "module",
   "license": "MIT",
   "scripts": {
     "start": "tsc && node dist/index.js",

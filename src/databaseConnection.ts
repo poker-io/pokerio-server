@@ -1,5 +1,5 @@
 import pg from 'pg'
-import { user, password } from './secrets.js'
+import { user, password } from './secrets'
 // pq is a CommonJS module, so we have to do it this way for the import to work
 const { Client } = pg
 

@@ -1,5 +1,5 @@
 import { app, port } from './app.js'
-import { databaseInit } from './databaseConnection.js'
+import { databaseInit } from './databaseConnection'
 import admin from 'firebase-admin'
 import { readFileSync } from 'fs'
 
