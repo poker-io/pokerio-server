@@ -9,13 +9,18 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: ghcr.io/oracle/oraclelinux8-instantclient:21
 
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+
+      - name: Setup Oracle instant client
+        run: |
+          wget https://students.mimuw.edu.pl/~kw438800/instantclient.rpm
+          sudo apt install alien libaio1
+          sudo alien -i instantclient.rpm
 
       - name: Setup secrets
         env:
