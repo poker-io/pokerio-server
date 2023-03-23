@@ -8,9 +8,11 @@
 
 ## Building
 
-Run `yarn install`
+Run `yarn install`.
 
 ## Running
+
+First you have to add firebase service account json file in src/ as serviceAccount.json.
 
 Run `yarn start`.
 

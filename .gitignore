@@ -1,3 +1,5 @@
 dist/
 node_modules/
 coverage/
+src/serviceAccount.json
+yarn-error.log
