@@ -28,6 +28,7 @@ jobs:
           USER: ${{ secrets.KWASOW_USERNAME }}
           PASSWORD: ${{ secrets.KWASOW_PASSWORD }}
         run: |
+          mkdir -p ~/.ssh
           echo "StrictHostKeyChecking no" >> ~/.ssh/config
           ssh -fN -L 5432:lkdb:5432 $USER:$PASSWORD@students.mimuw.edu.pl
 
