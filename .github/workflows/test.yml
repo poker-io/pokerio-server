@@ -18,9 +18,10 @@ jobs:
 
       - name: Setup secrets
         env:
-          FILE: ${{ secrets.SECRETS_TS }}
+          USER: ${{ secrets.KWASOW_USERNAME }}
+          PASSWORD: ${{ secrets.KWASOW_PASSWORD }}
         run: |
-          echo $FILE > src/secrets.ts
+          echo "export const user = '$USER';export const password = '$PASSWORD';" > src/secrets.ts
 
       - name: Start server
         run: |

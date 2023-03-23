@@ -17,10 +17,8 @@ jobs:
           node-version: 18
 
       - name: Setup secrets
-        env:
-          FILE: ${{ secrets.SECRETS_TS }}
         run: |
-          echo $FILE > src/secrets.ts
+          echo "export const user = '';export const password = '';" > src/secrets.ts
 
       - name: yarn install, build typescript
         run: |
