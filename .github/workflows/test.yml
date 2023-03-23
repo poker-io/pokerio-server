@@ -21,6 +21,7 @@ jobs:
           wget https://students.mimuw.edu.pl/~kw438800/instantclient.rpm
           sudo apt install alien libaio1
           sudo alien -i instantclient.rpm
+          ls /opt/oracle
           sqlplus
 
       - name: Setup secrets
