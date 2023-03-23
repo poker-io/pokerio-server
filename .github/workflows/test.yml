@@ -32,11 +32,15 @@ jobs:
           echo "StrictHostKeyChecking no" >> ~/.ssh/config
           sshpass -p $PASSWORD ssh -fN -L 5432:lkdb:5432 $USER@students.mimuw.edu.pl
 
+      - name: Add firebase service account json file
+        env:
+          JSON: ${{ secrets.FIREBASE_SERVICEACCOUNTJSON }}
+        run: echo $JSON > src/serviceAccount.json
+
+      # Runs a set of commands using the runners shell
       - name: Start server
         run: |
           yarn install
-          yarn start &
-          sleep 10
           yarn test
       - name: Upload coverage reports to Codecov
         env:

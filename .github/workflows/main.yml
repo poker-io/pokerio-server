@@ -19,6 +19,11 @@ jobs:
       - name: Setup secrets
         run: |
           echo "export const user = '';export const password = '';" > src/secrets.ts
+      
+      - name: Add firebase service account json file
+        env:
+          JSON: ${{ secrets.FIREBASE_SERVICEACCOUNTJSON }}
+        run: echo $JSON > src/serviceAccount.json
 
       - name: yarn install, build typescript
         run: |
