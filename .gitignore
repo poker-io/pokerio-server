@@ -1,5 +1,6 @@
 dist/
 node_modules/
 coverage/
+src/secrets.ts
 src/serviceAccount.json
 yarn-error.log

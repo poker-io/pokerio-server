@@ -13,5 +13,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+      - name: Setup secrets
+        run: |
+          echo "export const user = '';export const password = '';" > src/secrets.ts
       - run: yarn install
       - run: yarn pretty-check
