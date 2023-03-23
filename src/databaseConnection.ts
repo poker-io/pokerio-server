@@ -1,6 +1,15 @@
-import { Client } from 'pg'
+import pg from 'pg'
+import { user, password } from './secrets.js'
+// pq is a CommonJS module, so we have to do it this way for the import to work
+const { Client } = pg
 
-const client = new Client()
+const client = new Client({
+  user,
+  password,
+  database: 'bd',
+  port: 5432,
+  host: 'localhost'
+})
 
 export async function databaseInit(): Promise<void> {
   let success = true
