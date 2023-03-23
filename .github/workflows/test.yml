@@ -36,8 +36,6 @@ jobs:
       - name: Start server
         run: |
           yarn install
-          yarn start &
-          sleep 10
           yarn test
       - name: Upload coverage reports to Codecov
         env:
