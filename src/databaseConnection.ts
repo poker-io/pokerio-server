@@ -8,7 +8,7 @@ const client = new Client({
   password,
   database: 'bd',
   port: 5432,
-  host: 'localhost'
+  host: 'localhost',
 })
 
 export async function databaseInit(): Promise<void> {

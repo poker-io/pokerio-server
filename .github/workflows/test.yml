@@ -22,9 +22,14 @@ jobs:
           PASSWORD: ${{ secrets.KWASOW_PASSWORD }}
         run: |
           echo "export const user = '$USER';export const password = '$PASSWORD';" > src/secrets.ts
+      
 
       - name: Start server
+        env:
+          USER: ${{ secrets.KWASOW_USERNAME }}
+          PASSWORD: ${{ secrets.KWASOW_PASSWORD }}
         run: |
+          ssh -fN -L 5432:lkdb:5432 $USER:$PASSWORD@students.mimuw.edu.pl
           yarn install
           yarn start &
           sleep 10
