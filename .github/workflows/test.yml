@@ -16,13 +16,6 @@ jobs:
         with:
           node-version: 18
 
-      - name: Setup Oracle instant client
-        run: |
-          wget https://students.mimuw.edu.pl/~kw438800/instantclient.rpm
-          sudo apt install alien libaio1
-          sudo alien -i instantclient.rpm
-          export PATH=/usr/lib/oracle/21.9/client64/bin:$PATH
-
       - name: Setup secrets
         env:
           FILE: ${{ secrets.SECRETS_TS }}
