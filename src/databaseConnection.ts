@@ -1,40 +1,28 @@
-import oracledb, { type Connection } from 'oracledb'
-import {
-  oracleConnectionString,
-  oraclePassword,
-  oracleUser,
-} from './secrets.js'
+import { Client } from 'pg'
 
-export async function databaseConnect(): Promise<Connection> {
-  return await oracledb.getConnection({
-    user: oracleUser,
-    password: oraclePassword,
-    connectionString: oracleConnectionString,
-  })
-}
+const client = new Client()
 
 export async function databaseInit(): Promise<void> {
-  // Connect
-  let connection: Connection | undefined
   let success = true
 
-  // Create the tables
-  // This will fail if tables already exist, but we don't care
   try {
-    connection = await databaseConnect()
+    // Connect
+    await client.connect()
 
+    // Create the tables
+    // This will fail if tables already exist, but we don't care
     try {
-      await connection.execute(
-        `CREATE TABLE Players (
-          id NUMBER GENERATED ALWAYS as IDENTITY(START with 1 INCREMENT by 1) PRIMARY KEY,
-          token VARCHAR(250) NOT NULL,
+      await client.query(
+        `CREATE TABLE IF NOT EXISTS Players (
+          id SERIAL UNIQUE NOT NULL,
+          token VARCHAR(250) NOT NULL PRIMARY KEY,
           nickname VARCHAR(20) NOT NULL,
-          turn INTEGER NOT NULL,
+          turn BIGINT NOT NULL,
           game_id VARCHAR(6),
           card1 VARCHAR(3),
           card2 VARCHAR(3),
-          funds INTEGER,
-          bet INTEGER
+          funds BIGINT,
+          bet BIGINT
         )`
       )
     } catch (err) {
@@ -42,21 +30,21 @@ export async function databaseInit(): Promise<void> {
     }
 
     try {
-      await connection.execute(
-        `CREATE TABLE Games (
+      await client.query(
+        `CREATE TABLE IF NOT EXISTS Games (
           game_id VARCHAR(6) PRIMARY KEY,
-          game_master NOT NULL REFERENCES Players,
+          game_master SERIAL REFERENCES Players(id) NOT NULL,
           card1 VARCHAR(3),
           card2 VARCHAR(3),
           card3 VARCHAR(3),
           card4 VARCHAR(3),
           card5 VARCHAR(3),
-          game_round INTEGER DEFAULT 0 NOT NULL,
-          starting_funds INTEGER NOT NULL,
-          small_blind INTEGER NOT NULL,
-          small_blind_who REFERENCES Players,
-          current_table_value INTEGER,
-          current_player REFERENCES Players
+          game_round BIGINT DEFAULT 0 NOT NULL,
+          starting_funds BIGINT NOT NULL,
+          small_blind BIGINT NOT NULL,
+          small_blind_who SERIAL REFERENCES Players(id) NOT NULL,
+          current_table_value BIGINT,
+          current_player SERIAL REFERENCES Players(id) NOT NULL
         )`
       )
     } catch (err) {
@@ -66,12 +54,10 @@ export async function databaseInit(): Promise<void> {
     console.error(err)
     success = false
   } finally {
-    if (connection !== undefined) {
-      try {
-        await connection.close()
-      } catch (err) {
-        console.error(err)
-      }
+    try {
+      await client.end()
+    } catch (err) {
+      console.error(err)
     }
   }
 
@@ -80,8 +66,4 @@ export async function databaseInit(): Promise<void> {
   } else {
     await Promise.reject(new Error('Failed to connect to database'))
   }
-}
-
-export function boolToInt(bool: boolean): number {
-  return bool ? 1 : 0
 }
