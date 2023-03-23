@@ -1,4 +1,4 @@
-import express from 'express'
+import { app, port } from './app.js'
 import { databaseInit } from './databaseConnection.js'
 import admin from 'firebase-admin'
 import { readFileSync } from 'fs'
@@ -13,13 +13,6 @@ admin.initializeApp({
     clientEmail: serviceAccount.client_email,
     projectId: serviceAccount.project_id,
   }),
-})
-
-const app = express()
-export const port = 42069
-
-app.get('/test', (req, res) => {
-  res.send('Hello from typescript express!')
 })
 
 databaseInit()
