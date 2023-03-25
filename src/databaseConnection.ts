@@ -3,17 +3,19 @@ import { user, password } from './secrets'
 // pq is a CommonJS module, so we have to do it this way for the import to work
 const { Client } = pg
 
-const client = new Client({
-  user,
-  password,
-  database: 'bd',
-  port: 5432,
-  host: 'localhost',
-})
+export function getClient(): any {
+  return new Client({
+    user,
+    password,
+    database: 'bd',
+    port: 5432,
+    host: 'localhost',
+  })
+}
 
 export async function databaseInit(): Promise<void> {
   let success = true
-
+  const client = getClient()
   try {
     // Connect
     await client.connect()
@@ -52,9 +54,12 @@ export async function databaseInit(): Promise<void> {
         )`
     )
 
+    // TODO move to testing
     await client.query(
       `INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) 
          VALUES('TestDatabaseConnectionToken', 'testNick', 0, NULL, NULL, NULL, NULL, NULL)
+         ON CONFLICT (token)
+         DO NOTHING
         `
     )
   } catch (err) {
