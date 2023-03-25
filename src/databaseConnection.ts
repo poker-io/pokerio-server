@@ -20,9 +20,8 @@ export async function databaseInit(): Promise<void> {
 
     // Create the tables
     // This will fail if tables already exist, but we don't care
-    try {
-      await client.query(
-        `CREATE TABLE IF NOT EXISTS Players (
+    await client.query(
+      `CREATE TABLE IF NOT EXISTS Players (
           id SERIAL UNIQUE NOT NULL,
           token VARCHAR(250) NOT NULL PRIMARY KEY,
           nickname VARCHAR(20) NOT NULL,
@@ -33,14 +32,10 @@ export async function databaseInit(): Promise<void> {
           funds BIGINT,
           bet BIGINT
         )`
-      )
-    } catch (err) {
-      console.error(err)
-    }
+    )
 
-    try {
-      await client.query(
-        `CREATE TABLE IF NOT EXISTS Games (
+    await client.query(
+      `CREATE TABLE IF NOT EXISTS Games (
           game_id VARCHAR(6) PRIMARY KEY,
           game_master SERIAL REFERENCES Players(id) NOT NULL,
           card1 VARCHAR(3),
@@ -55,10 +50,13 @@ export async function databaseInit(): Promise<void> {
           current_table_value BIGINT,
           current_player SERIAL REFERENCES Players(id) NOT NULL
         )`
-      )
-    } catch (err) {
-      console.error(err)
-    }
+    )
+
+    await client.query(
+      `INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) 
+         VALUES('TestDatabaseConnectionToken', 'testNick', 0, NULL, NULL, NULL, NULL, NULL)
+        `
+    )
   } catch (err) {
     console.error(err)
     success = false
