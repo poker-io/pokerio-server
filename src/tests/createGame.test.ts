@@ -50,7 +50,7 @@ test('Create game, good args, good player', async () => {
   const imposibleFirbaseToken = 'TEST'
   const client = getClient()
   await client.connect()
-  const index = await genNonExistentPlayerNumber(client)
+  const index = 2137
 
   const values = [
     index,
