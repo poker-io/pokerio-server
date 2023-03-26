@@ -34,8 +34,8 @@ test('Create game, wrong args', (done) => {
 })
 
 test('Create game, good args, non existent player', async () => {
-  await databaseInit()
   const client = getClient()
+  await databaseInit()
   await client.connect()
   const index = await genNonExistentPlayerNumber(client)
 
