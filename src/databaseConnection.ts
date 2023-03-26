@@ -62,6 +62,35 @@ export async function databaseInit(): Promise<void> {
          DO NOTHING
         `
     )
+
+    await client.query(
+      `create or replace function insert_with_random_key (game_master numeric,
+            card1 text,
+            card2 text,
+            card3 text,
+            card4 text,
+            card5 text,
+            game_round numeric,
+            starting_funds numeric,
+            small_blind numeric,
+            small_blind_who numeric,
+            current_table_value numeric,
+            current_player numeric)
+        returns boolean
+        language plpgsql
+        
+        as
+        $$
+        begin
+            insert into Games(game_id, game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) values (CAST(random() * 1000000 AS INT), game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) on conflict do nothing;
+        
+            if not found then return generic_insert(game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player);
+             end if;
+        
+            return found;
+        end;
+        $$;`
+    )
   } catch (err) {
     console.error(err)
     success = false
