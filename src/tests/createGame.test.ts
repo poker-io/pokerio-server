@@ -1,6 +1,6 @@
 import { app } from '../app'
 import request from 'supertest'
-import { getClient } from '../databaseConnection'
+import { getClient, databaseInit } from '../databaseConnection'
 
 async function genNonExistentPlayerNumber(client): Promise<number> {
   let badIndex: boolean = true
@@ -34,6 +34,7 @@ test('Create game, wrong args', (done) => {
 })
 
 test('Create game, good args, non existent player', async () => {
+  await databaseInit()
   const client = getClient()
   await client.connect()
   const index = await genNonExistentPlayerNumber(client)
