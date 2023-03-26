@@ -54,15 +54,6 @@ export async function databaseInit(): Promise<void> {
         )`
     )
 
-    // TODO move to testing
-    await client.query(
-      `INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) 
-         VALUES('TestDatabaseConnectionToken', 'testNick', 0, NULL, NULL, NULL, NULL, NULL)
-         ON CONFLICT (token)
-         DO NOTHING
-        `
-    )
-
     await client.query(
       `create or replace function insert_with_random_key (game_master numeric,
             card1 text,
@@ -76,18 +67,22 @@ export async function databaseInit(): Promise<void> {
             small_blind_who numeric,
             current_table_value numeric,
             current_player numeric)
-        returns boolean
+        returns numeric
         language plpgsql
         
         as
         $$
+        declare
+            game_id_rand numeric := CAST(random() * 1000000 AS INT);
         begin
-            insert into Games(game_id, game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) values (CAST(random() * 1000000 AS INT), game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) on conflict do nothing;
+            
+
+            insert into Games(game_id, game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) values (game_id_rand, game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) on conflict do nothing;
         
             if not found then return generic_insert(game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player);
              end if;
         
-            return found;
+            return game_id_rand;
         end;
         $$;`
     )
