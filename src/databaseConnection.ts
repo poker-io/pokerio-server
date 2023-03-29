@@ -24,7 +24,6 @@ export async function databaseInit(): Promise<void> {
     // This will fail if tables already exist, but we don't care
     await client.query(
       `CREATE TABLE IF NOT EXISTS Players (
-          id SERIAL UNIQUE NOT NULL,
           token VARCHAR(250) NOT NULL PRIMARY KEY,
           nickname VARCHAR(20) NOT NULL,
           turn BIGINT NOT NULL,
