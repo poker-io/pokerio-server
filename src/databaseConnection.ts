@@ -38,7 +38,7 @@ export async function databaseInit(): Promise<void> {
     await client.query(
       `CREATE TABLE IF NOT EXISTS Games (
           game_id VARCHAR(6) PRIMARY KEY,
-          game_master SERIAL REFERENCES Players(id) NOT NULL,
+          game_master VARCHAR(250) REFERENCES Players(token) NOT NULL,
           card1 VARCHAR(3),
           card2 VARCHAR(3),
           card3 VARCHAR(3),
@@ -47,14 +47,15 @@ export async function databaseInit(): Promise<void> {
           game_round BIGINT DEFAULT 0 NOT NULL,
           starting_funds BIGINT NOT NULL,
           small_blind BIGINT NOT NULL,
-          small_blind_who SERIAL REFERENCES Players(id) NOT NULL,
+          small_blind_who VARCHAR(250) REFERENCES Players(token) NOT NULL,
           current_table_value BIGINT,
-          current_player SERIAL REFERENCES Players(id) NOT NULL
+          current_player VARCHAR(250) REFERENCES Players(token) NOT NULL
         )`
     )
 
     await client.query(
-      `create or replace function insert_with_random_key (game_master numeric,
+      `create or replace function insert_with_random_key (
+            game_master text,
             card1 text,
             card2 text,
             card3 text,
@@ -63,9 +64,9 @@ export async function databaseInit(): Promise<void> {
             game_round numeric,
             starting_funds numeric,
             small_blind numeric,
-            small_blind_who numeric,
+            small_blind_who text,
             current_table_value numeric,
-            current_player numeric)
+            current_player text)
         returns numeric
         language plpgsql
         

@@ -1,82 +1,62 @@
 import { app } from '../app'
 import request from 'supertest'
-import { getClient, databaseInit } from '../databaseConnection'
-
-async function genNonExistentPlayerNumber(client): Promise<number> {
-  let badIndex: boolean = true
-  let index = 0
-  while (badIndex) {
-    index = Math.floor(Math.random() * 100000)
-    const res = await client.query(
-      'SELECT * FROM Players WHERE id ='.concat(index.toString())
-    )
-
-    badIndex = Boolean(res.rows.length)
-  }
-
-  return index
-}
+import { getClient } from '../databaseConnection'
 
 test('Create game, wrong args', (done) => {
-  request(app).get('/createGame/?creatorID=-1').expect(400).end(done)
+  request(app).get('/createGame/?creatorToken=-1').expect(400).end(done)
 
   request(app).get('/createGame').expect(400).end(done)
 
   request(app)
-    .get('/createGame/?creatorID=1&startingFunds=asdasd')
+    .get('/createGame/?creatorToken=1&startingFunds=asdasd')
     .expect(400)
     .end(done)
 
   request(app)
-    .get('/createGame/?creatorID=1&startingFunds=2&smallBlind=-32')
+    .get('/createGame/?creatorToken=1&startingFunds=2&smallBlind=-32')
+    .expect(400)
+    .end(done)
+
+  request(app).get('/createGame/?creatorToken=1').expect(400).end(done)
+
+  request(app)
+    .get(
+      '/createGame/?creatorToken=VERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRINGVERYLONGSTRING'
+    )
+    .expect(400)
+    .end(done)
+
+  request(app)
+    .get('/createGame/?creatorToken=1&nickname=LongerThanTwentyString')
     .expect(400)
     .end(done)
 })
 
-test('Create game, good args, non existent player', async () => {
-  const client = getClient()
-  await databaseInit()
-  await client.connect()
-  const index = await genNonExistentPlayerNumber(client)
-
-  await request(app)
-    .get('/createGame/?creatorID='.concat(index.toString()))
-    .expect(400)
-
-  await client.end()
-})
-
 test('Create game, good args, good player', async () => {
   const imposibleFirbaseToken = 'TEST'
+  const nick = 'NICK'
   const client = getClient()
   await client.connect()
-  const index = 2137
-
-  const values = [
-    index,
-    imposibleFirbaseToken,
-    'Test Nick',
-    0,
-    null,
-    null,
-    null,
-    0,
-    0,
-  ]
-  await client.query(
-    'INSERT INTO Players(id, token, nickname, turn, game_id, card1, card2, funds, bet) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-    values
-  )
 
   await request(app)
-    .get('/createGame/?creatorID='.concat(index.toString()))
+    .get(
+      '/createGame/?creatorToken='
+        .concat(imposibleFirbaseToken)
+        .concat('&nickname=')
+        .concat(nick)
+    )
     .expect(200)
 
-  await client.query(
-    'DELETE FROM Games WHERE game_master = '.concat(index.toString())
-  )
-
-  await client.query('DELETE FROM Players WHERE id = '.concat(index.toString()))
+  const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
+  await client.query(deleteGameQuery, [imposibleFirbaseToken]).catch((err) => {
+    console.log(err.stack)
+  })
+  const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
+  await client
+    .query(deletePlayerQuery, [imposibleFirbaseToken])
+    .catch((err) => {
+      console.log(err.stack)
+    })
 
   await client.end()
 })

@@ -1,6 +1,7 @@
 import express from 'express'
 import { celebrate, Joi, isCelebrateError, Segments } from 'celebrate'
 import { getClient } from './databaseConnection'
+// import getAuth from 'firebase-auth'
 
 export const app = express()
 export const port = 42069
@@ -27,54 +28,77 @@ app.get(
   '/createGame',
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
-      creatorID: Joi.number().required().min(1).label('creatorID'),
+      creatorToken: Joi.string()
+        .required()
+        .min(1)
+        .max(250)
+        .label('creatorToken'),
+      nickname: Joi.string().required().max(20).label('Nickname'),
       startingFunds: Joi.number().min(1).label('Starting Funds'),
       smallBlind: Joi.number().min(1).label('Small Blind'),
     }),
   }),
-  async (req, res) => {
+  (req, res) => {
+    // Does not work for some reason
+    // getAuth()
+    //  .verifyIdToken(req.query.creatorToken)
+    //  .catch((error) => {
+    //    console.log(error.stack)
+    //
+    //    return res.sendStatus(400)
+    //  })
+
     const client = getClient()
-    await client.connect()
-    let createGameQuery = 'SELECT * FROM insert_with_random_key('
-    const selectQuery = 'SELECT id FROM Players WHERE id = '.concat(
-      req.query.creatorID?.toString() ?? ''
-    )
-    let creatorExists: boolean = false
+    client
+      .connect()
+      .then(async () => {
+        // todo add firebase validation
 
-    await client
-      .query(selectQuery)
-      .then(async (selectRes) => {
-        creatorExists = Boolean(selectRes.rows.length)
+        const createPlayerQuery =
+          'INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) VALUES($1, $2, $3, $4, $5, $6, $7, $8)'
+        const createPlayerValues = [
+          req.query.creatorToken,
+          req.query.nickname,
+          0,
+          null,
+          null,
+          null,
+          null,
+          null,
+        ]
 
-        if (!creatorExists) {
-          await client.end()
-          return res.sendStatus(400)
-        }
-
+        const createGameQuery =
+          'SELECT * FROM insert_with_random_key($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) '
         const values = [
-          req.query.creatorID,
-          'null',
-          'null',
-          'null',
-          'null',
-          'null',
+          req.query.creatorToken,
+          null,
+          null,
+          null,
+          null,
+          null,
           0,
           req.query.startingFunds ?? startingFundsDefault,
           req.query.smallBlind ?? smallBlindDefault,
-          req.query.creatorID,
+          req.query.creatorToken,
           0,
-          req.query.creatorID,
+          req.query.creatorToken,
         ]
 
-        createGameQuery = createGameQuery.concat(values.toString()).concat(')')
+        await client
+          .query(createPlayerQuery, createPlayerValues)
+          .catch(async (err) => {
+            console.error(err.stack)
+            await client.end()
+            return res.sendStatus(500)
+          })
 
         await client
-          .query(createGameQuery)
+          .query(createGameQuery, values)
           .then(async (result) => {
             await client
-              .query('UPDATE Players SET game_id=$1 WHERE id=$2', [
+              .query('UPDATE Players SET game_id=$1 WHERE token=$2', [
                 result.rows[0].insert_with_random_key,
-                req.query.creatorID,
+                req.query.creatorToken,
               ])
               .then(() => {
                 return res.sendStatus(200)
@@ -88,13 +112,18 @@ app.get(
             console.error(err.stack)
             return res.sendStatus(500)
           })
+          .catch((err) => {
+            console.error(err.stack)
+            return res.sendStatus(500)
+          })
+
+        await client.end()
       })
-      .catch((err) => {
-        console.error(err.stack)
+      .catch(async (err) => {
+        console.log(err.stack)
+        await client.end()
         return res.sendStatus(500)
       })
-
-    await client.end()
   }
 )
 
