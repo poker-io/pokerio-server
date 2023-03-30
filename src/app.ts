@@ -1,7 +1,6 @@
 import express from 'express'
 import { celebrate, Joi, isCelebrateError, Segments } from 'celebrate'
 import { getClient } from './databaseConnection'
-// import getAuth from 'firebase-auth'
 
 export const app = express()
 export const port = 42069
@@ -39,21 +38,12 @@ app.get(
     }),
   }),
   (req, res) => {
-    // Does not work for some reason
-    // getAuth()
-    //  .verifyIdToken(req.query.creatorToken)
-    //  .catch((error) => {
-    //    console.log(error.stack)
-    //
-    //    return res.sendStatus(400)
-    //  })
+    // todo add firebase validation
 
     const client = getClient()
     client
       .connect()
       .then(async () => {
-        // todo add firebase validation
-
         const createPlayerQuery =
           'INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) VALUES($1, $2, $3, $4, $5, $6, $7, $8)'
         const createPlayerValues = [
@@ -101,7 +91,13 @@ app.get(
                 req.query.creatorToken,
               ])
               .then(() => {
-                return res.sendStatus(200)
+                res.send([
+                  result.rows[0].insert_with_random_key,
+                  [
+                    req.query.startingFunds ?? startingFundsDefault,
+                    req.query.smallBlind ?? smallBlindDefault,
+                  ],
+                ])
               })
               .catch((err) => {
                 console.error(err.stack)

@@ -1,6 +1,6 @@
 import pg from 'pg'
 import { user, password } from './secrets'
-// pq is a CommonJS module, so we have to do it this way for the import to work
+// pg is a CommonJS module, so we have to do it this way for the import to work
 export const { Client } = pg
 
 export function getClient(): any {
@@ -54,30 +54,30 @@ export async function databaseInit(): Promise<void> {
     )
 
     await client.query(
-      `create or replace function insert_with_random_key (
-            game_master text,
-            card1 text,
-            card2 text,
-            card3 text,
-            card4 text,
-            card5 text,
-            game_round numeric,
-            starting_funds numeric,
-            small_blind numeric,
-            small_blind_who text,
-            current_table_value numeric,
-            current_player text)
-        returns numeric
+      `CREATE OR REPLACE function insert_with_random_key (
+            game_master TEXT,
+            card1 TEXT,
+            card2 TEXT,
+            card3 TEXT,
+            card4 TEXT,
+            card5 TEXT,
+            game_round NUMERIC,
+            starting_funds NUMERIC,
+            small_blind NUMERIC,
+            small_blind_who TEXT,
+            current_table_value NUMERIC,
+            current_player TEXT)
+        returns NUMERIC
         language plpgsql
         
         as
         $$
         declare
-            game_id_rand numeric := CAST(random() * 1000000 AS INT);
+            game_id_rand NUMERIC := CAST(random() * 1000000 AS INT);
         begin
             
 
-            insert into Games(game_id, game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) values (game_id_rand, game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) on conflict do nothing;
+            INSERT INTO Games(game_id, game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) values (game_id_rand, game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) ON CONFLICT DO NOTHING;
         
             if not found then return generic_insert(game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player);
              end if;
