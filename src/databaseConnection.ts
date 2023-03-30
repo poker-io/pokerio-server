@@ -77,9 +77,17 @@ export async function databaseInit(): Promise<void> {
         begin
             
 
-            INSERT INTO Games(game_id, game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) values (game_id_rand, game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player) ON CONFLICT DO NOTHING;
+            INSERT INTO Games(game_id, game_master, card1, card2, card3, card4, 
+                card5, game_round, starting_funds, small_blind, small_blind_who,
+                current_table_value, current_player) 
+            values (game_id_rand, game_master, card1, card2, card3, card4,
+                 card5, game_round, starting_funds, small_blind, 
+                 small_blind_who, current_table_value, current_player)
+            ON CONFLICT DO NOTHING;
         
-            if not found then return generic_insert(game_master, card1, card2, card3, card4, card5, game_round, starting_funds, small_blind, small_blind_who, current_table_value, current_player);
+            if not found then return generic_insert(game_master, card1, card2,
+                 card3, card4, card5, game_round, starting_funds, small_blind, 
+                 small_blind_who, current_table_value, current_player);
              end if;
         
             return game_id_rand;
