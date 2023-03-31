@@ -91,13 +91,12 @@ app.get(
                 req.query.creatorToken,
               ])
               .then(() => {
-                res.send([
-                  result.rows[0].insert_with_random_key,
-                  [
+                res.send({
+                  gameKey: result.rows[0].insert_with_random_key,
+                  startingFunds:
                     req.query.startingFunds ?? startingFundsDefault,
-                    req.query.smallBlind ?? smallBlindDefault,
-                  ],
-                ])
+                  smallBlind: req.query.smallBlind ?? smallBlindDefault,
+                })
               })
               .catch((err) => {
                 console.error(err.stack)
