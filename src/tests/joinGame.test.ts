@@ -2,8 +2,33 @@ import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../databaseConnection'
 
-test('Join game, wrong args', async () => {
+test('Join game, wrong args', (doneJoin) => {
+  request(app)
+    .get('/joinGame/?playerToken=-1&nickname=yellow&gameID=TESTJOIN')
+    .expect(400)
+    .end(doneJoin) // bad token
+  request(app).get('/joinGame').expect(400).end(doneJoin) // no args
+  request(app)
+    .get('/joinGame/?playerToken=TESTJOIN1&nickname=11&gameId=TESTJOIN')
+    .expect(400)
+    .end(doneJoin) // bad nickname
+  request(app)
+    .get('/joinGame/?playerToken=TESTJOIN1&nickname=LongerThanTwentyString&gameId=TESTJOIN')
+    .expect(400)
+    .end(doneJoin) // nickname too long
+  request(app)
+    .get('/joinGame/?playerToken=TESTJOIN1&nickname=yellow&gameId=TESTJOIN')
+    .expect(400)
+    .end(doneJoin) // bad game id format
+  request(app)
+    .get('/joinGame/?playerToken=TESTJOIN1&nickname=yellow&gameId=11')
+    .expect(401)
+    .end(doneJoin) // game does not exist
+})
+
+test('Join game, correct arguments', async () => {
   const imposibleFirbaseToken = 'TESTJOIN'
+  const playerToken = 'TESTJOIN2'
   const nick = 'NICKJOIN'
   const client = getClient()
   await client.connect()
@@ -17,41 +42,27 @@ test('Join game, wrong args', async () => {
     )
     .expect(200)
 
+  let gameId = 'game_not_found'
   const findGameQuery = 'SELECT game_id FROM Games where game_master=$1'
   await client.query(findGameQuery, [imposibleFirbaseToken]).then(
     async (result) => {
-      const gameID = (result.rows[0].game_id).toString()
-      request(app)
-        .get('/joinGame/?playerToken=-1&nickname=yellow&game_id='.concat(gameID))
-        .expect(400) // bad token
-
-      request(app).get('/joinGame').expect(400) // no args
-      request(app)
-        .get('/joinGame/?playerToken=1&nickname=11&gameID=1')
-        .expect(400) // bad nickname
-
-      request(app)
-        .get('/createGame/?playerToken=1&nickname=LongerThanTwentyString&game_id='.concat(gameID))
-        .expect(400) // nickname too long
-
+      gameId = (result.rows[0].game_id).toString()
+      await request(app)
+        .get('/joinGame/?playerToken='
+          .concat(playerToken)
+          .concat('&nickname=yellow&gameId=')
+          .concat(gameId))
+        .expect(200)
       const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
-      await client.query(deleteGameQuery, [imposibleFirbaseToken]).catch((err) => {
-        console.log(err.stack)
-      })
-      const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
-      await client
-        .query(deletePlayerQuery, [imposibleFirbaseToken])
+      await client.query(deleteGameQuery, [imposibleFirbaseToken])
         .catch((err) => {
           console.log(err.stack)
         })
-      request(app)
-        .get('/createGame/?playerToken=1&nickname=yellow&game_id='.concat(gameID))
-        .expect(401) // game does not exist
-
-      await client.end()
-    }
-  ).catch((err) => {
-    console.log(err.stack)
-  })
-  await client.end()
+      const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1 or token = $2'
+      await client
+        .query(deletePlayerQuery, [playerToken, imposibleFirbaseToken])
+        .catch((err) => {
+          console.log(err.stack)
+        })
+    }).finally(() => { client.end() })
 })

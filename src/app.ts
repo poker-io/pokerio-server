@@ -127,8 +127,8 @@ app.get(
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
       playerToken: Joi.string().required().min(1).max(250).label('playerToken'),
-      nickname: Joi.string().required().max(20).label('Nickname'),
-      gameID: Joi.number().min(0).max(999999).label('Game ID'), // Range of ids is 0-999999
+      nickname: Joi.string().required().max(20).label('nickname'),
+      gameId: Joi.number().required().min(0).max(999999).label('gameId'), // Range of ids is 0-999999
     }),
   }),
   (req, res) => {
@@ -139,49 +139,71 @@ app.get(
     client
       .connect()
       .then(async () => {
-        const checkIfGameExistsQuery = 'SELECT * FROM Games WHERE game_id=$1'
-        const gameCheckValues = [req.query.gameID]
-
-        await client
-          .query(checkIfGameExistsQuery, gameCheckValues)
-          .then((result) => {
-            if (result.rows.length === 0) {
-              res.send({ errorName: 'GameDoesNotExist' })
-              return res.sendStatus(401) // game does not exist
-            }
-          })
-          .catch(async (err) => {
-            console.error(err.stack)
-            await client.end()
-            return res.sendStatus(500)
-          })
-
+        const checkIfGameExistsQuery =
+          'SELECT game_master FROM Games WHERE game_id=$1'
+        const gameCheckValues = [req.query.gameId]
         const createPlayerQuery =
           'INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) VALUES($1, $2, $3, $4, $5, $6, $7, $8)'
         const createPlayerValues = [
           req.query.playerToken,
           req.query.nickname,
           0,
-          req.query.gameID,
+          req.query.gameId,
           null,
           null,
           null,
           null,
         ]
+        // const getGameInfoQuery = 'SELECT * FROM Games WHERE game_id=$1'
+        // const getGameInfoValues = [req.query.gameId]
+        // const getPlayersInRoomQuery = 'SELECT nickname FROM Players WHERE game_id=$1'
+        // const getPlayersInRoomValues = [req.query.gameId]
 
         await client
-          .query(createPlayerQuery, createPlayerValues)
-          .catch(async (err) => {
-            console.error(err.stack)
-            await client.end()
-            return res.sendStatus(500)
+          .query(checkIfGameExistsQuery, gameCheckValues)
+          .then(async (result) => {
+            if (result.rowCount === 0) {
+              // game does not exist
+              return res.sendStatus(401)
+            } else {
+              // game exists
+              await client
+                .query(createPlayerQuery, createPlayerValues)
+                .catch((err) => {
+                  console.error(err.stack)
+                  return res.sendStatus(500)
+                })
+              // const smallBlind = new Promise<number>((resolve, reject) => {})
+              // const startingFunds = new Promise<number>((resolve, reject) => {})
+              // const players = new Promise<number>((resolve, reject) => {})
+
+              // const gameInfo = {
+              //   smallBlind: null,
+              //   startingFunds: null,
+              //   players: [{ nickname: null }]
+              // }
+              // await client.query(getGameInfoQuery, getGameInfoValues)
+              //   .then((result) => {
+              //     gameInfo.smallBlind = result.rows[0].small_blind
+              //     gameInfo.startingFunds = result.rows[0].starting_funds
+              //   })
+              // await client.query(getPlayersInRoomQuery, getPlayersInRoomValues)
+              //   .then((result) => {
+              //     result.rows.forEach((row) => {
+              //       gameInfo.players.push(row.nickname)
+              //     })
+              //   })
+              // res.send(gameInfo)
+              return res.sendStatus(200)
+            }
           })
-        client.end()
       })
-      .catch(async (err) => {
+      .catch((err) => {
         console.log(err.stack)
-        await client.end()
         return res.sendStatus(500)
+      })
+      .finally(async () => {
+        await client.end()
       })
   }
 )
