@@ -122,4 +122,67 @@ app.get(
   }
 )
 
+app.get(
+  '/joinGame',
+  celebrate({
+    [Segments.QUERY]: Joi.object().keys({
+      playerToken: Joi.string().required().min(1).max(250).label('playerToken'),
+      nickname: Joi.string().required().max(20).label('Nickname'),
+      gameID: Joi.number().min(0).max(999999).label('Game ID'), // Range of ids is 0-999999
+    }),
+  }),
+  (req, res) => {
+    // todo add firebase validation
+
+    const client = getClient()
+
+    client
+      .connect()
+      .then(async () => {
+        const checkIfGameExistsQuery = 'SELECT * FROM Games WHERE game_id=$1'
+        const gameCheckValues = [req.query.gameID]
+
+        await client
+          .query(checkIfGameExistsQuery, gameCheckValues)
+          .then((result) => {
+            if (result.rows.length === 0) {
+              res.send({ errorName: 'GameDoesNotExist' })
+              return res.sendStatus(401) // game does not exist
+            }
+          })
+          .catch(async (err) => {
+            console.error(err.stack)
+            await client.end()
+            return res.sendStatus(500)
+          })
+
+        const createPlayerQuery =
+          'INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) VALUES($1, $2, $3, $4, $5, $6, $7, $8)'
+        const createPlayerValues = [
+          req.query.playerToken,
+          req.query.nickname,
+          0,
+          req.query.gameID,
+          null,
+          null,
+          null,
+          null,
+        ]
+
+        await client
+          .query(createPlayerQuery, createPlayerValues)
+          .catch(async (err) => {
+            console.error(err.stack)
+            await client.end()
+            return res.sendStatus(500)
+          })
+        client.end()
+      })
+      .catch(async (err) => {
+        console.log(err.stack)
+        await client.end()
+        return res.sendStatus(500)
+      })
+  }
+)
 app.use(errorHandling)
