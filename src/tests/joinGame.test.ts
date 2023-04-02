@@ -15,7 +15,9 @@ test('Join game, wrong args', (doneJoin) => {
     .expect(400)
     .end(doneJoin) // bad nickname
   request(app)
-    .get('/joinGame/?playerToken=TESTJOIN1&nickname=LongerThanTwentyString&gameId=TESTJOIN')
+    .get(
+      '/joinGame/?playerToken=TESTJOIN1&nickname=LongerThanTwentyString&gameId=TESTJOIN'
+    )
     .expect(400)
     .end(doneJoin) // nickname too long
   request(app)
@@ -49,41 +51,47 @@ test('Join game, correct arguments', async () => {
   const expectedInfo: gameSettings = {
     smallBlind: 60,
     startingFunds: 2137,
-    players: [{
-      nickname: gameMasterNick,
-      playerHash: sha256(gameMasterToken).toString()
-    },
-    {
-      nickname: playerNick,
-      playerHash: sha256(playerToken).toString()
-    }],
-    gameMasterHash: sha256(gameMasterToken).toString()
+    players: [
+      {
+        nickname: gameMasterNick,
+        playerHash: sha256(gameMasterToken).toString(),
+      },
+      {
+        nickname: playerNick,
+        playerHash: sha256(playerToken).toString(),
+      },
+    ],
+    gameMasterHash: sha256(gameMasterToken).toString(),
   }
   let gameId = 'game_not_found'
   const findGameQuery = 'SELECT game_id FROM Games where game_master=$1'
-  await client.query(findGameQuery, [gameMasterToken]).then(
-    async (result) => {
-      gameId = (result.rows[0].game_id).toString()
+  await client
+    .query(findGameQuery, [gameMasterToken])
+    .then(async (result) => {
+      gameId = result.rows[0].game_id.toString()
       await request(app)
-        .get('/joinGame/?playerToken='
-          .concat(playerToken)
-          .concat('&nickname=')
-          .concat(playerNick)
-          .concat('&gameId=')
-          .concat(gameId))
+        .get(
+          '/joinGame/?playerToken='
+            .concat(playerToken)
+            .concat('&nickname=')
+            .concat(playerNick)
+            .concat('&gameId=')
+            .concat(gameId)
+        )
         .expect(expectedInfo)
-    }).finally(async () => {
-    const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
-    await client.query(deleteGameQuery, [gameMasterToken])
-      .catch((err) => {
+    })
+    .finally(async () => {
+      const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
+      await client.query(deleteGameQuery, [gameMasterToken]).catch((err) => {
         console.log(err.stack)
       })
-    const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1 or token = $2'
-    await client
-      .query(deletePlayerQuery, [playerToken, gameMasterToken])
-      .catch((err) => {
-        console.log(err.stack)
-      })
-    client.end()
-  })
+      const deletePlayerQuery =
+        'DELETE FROM Players WHERE token = $1 or token = $2'
+      await client
+        .query(deletePlayerQuery, [playerToken, gameMasterToken])
+        .catch((err) => {
+          console.log(err.stack)
+        })
+      client.end()
+    })
 })
