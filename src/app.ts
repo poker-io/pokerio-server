@@ -3,6 +3,20 @@ import { celebrate, Joi, isCelebrateError, Segments } from 'celebrate'
 import { getClient } from './databaseConnection'
 import sha256 from 'crypto-js/sha256'
 import { getMessaging } from 'firebase-admin/messaging'
+import admin from 'firebase-admin'
+import { readFileSync } from 'fs'
+
+const serviceAccount = JSON.parse(
+  readFileSync('./src/serviceAccount.json', 'utf-8')
+)
+
+admin.initializeApp({
+  credential: admin.credential.cert({
+    privateKey: serviceAccount.private_key,
+    clientEmail: serviceAccount.client_email,
+    projectId: serviceAccount.project_id,
+  }),
+})
 
 export const app = express()
 export const port = 42069
@@ -135,7 +149,7 @@ app.get(
     [Segments.QUERY]: Joi.object().keys({
       playerToken: Joi.string().required().min(1).max(250).label('playerToken'),
       nickname: Joi.string().required().max(20).label('nickname'),
-      gameId: Joi.number().required().min(0).max(999999).label('gameId'), // Range of ids is 0-999999
+      gameId: Joi.number().required().min(0).max(999999).label('gameId'),
     }),
   }),
   (req, res) => {
@@ -211,20 +225,23 @@ app.get(
                   }
                   // We know that the values will be defined
                   // because we checked it with celebrate.
-                  result.rows.forEach((row) => {
+                  result.rows.forEach(async (row) => {
                     gameInfo.players.push({
                       nickname: row.nickname,
                       playerHash: sha256(row.token).toString(),
                     })
-                    message.token = row.token
-                    getMessaging()
-                      .send(message)
-                      .then((response) => {
-                        console.log('Successfully sent message:', response)
-                      })
-                      .catch((error) => {
-                        console.log('Error sending message:', error)
-                      })
+                    if (row.token !== req.query.playerToken) {
+                      // Sending firebase message to all players except the one who just joined.
+                      message.token = row.token
+                      await getMessaging()
+                        .send(message)
+                        .then((response) => {
+                          console.log('Successfully sent message:', response)
+                        })
+                        .catch((error) => {
+                          console.log('Error sending message:', error)
+                        })
+                    }
                   })
                 })
                 .catch((err) => {
