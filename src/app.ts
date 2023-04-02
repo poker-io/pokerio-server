@@ -1,6 +1,8 @@
 import express from 'express'
 import { celebrate, Joi, isCelebrateError, Segments } from 'celebrate'
 import { getClient } from './databaseConnection'
+import sha256 from 'crypto-js/sha256'
+import { getMessaging } from 'firebase-admin/messaging'
 
 export const app = express()
 export const port = 42069
@@ -9,12 +11,13 @@ const startingFundsDefault = 1000
 const smallBlindDefault = 100
 export interface playerInfo {
   nickname: string
-  playerId: number
+  playerHash: string
 }
 export interface gameSettings {
   smallBlind: number
   startingFunds: number
   players: playerInfo[]
+  gameMasterHash: string
 }
 
 const errorHandling = (error, req, res, next) => {
@@ -116,11 +119,6 @@ app.get(
             console.error(err.stack)
             return res.sendStatus(500)
           })
-          .catch((err) => {
-            console.error(err.stack)
-            return res.sendStatus(500)
-          })
-
         await client.end()
       })
       .catch(async (err) => {
@@ -148,7 +146,7 @@ app.get(
     client
       .connect()
       .then(async () => {
-        const checkIfGameExistsQuery =
+        const checkIfGameExistsQuery = // todo add check if game is full
           'SELECT game_master FROM Games WHERE game_id=$1'
         const gameCheckValues = [req.query.gameId]
         const createPlayerQuery =
@@ -166,9 +164,8 @@ app.get(
         const getGameInfoQuery = 'SELECT * FROM Games WHERE game_id=$1'
         const getGameInfoValues = [req.query.gameId]
         const getPlayersInRoomQuery =
-          'SELECT nickname FROM Players WHERE game_id=$1'
+          'SELECT nickname, token FROM Players WHERE game_id=$1'
         const getPlayersInRoomValues = [req.query.gameId]
-
         await client
           .query(checkIfGameExistsQuery, gameCheckValues)
           .then(async (result) => {
@@ -177,17 +174,18 @@ app.get(
               return res.sendStatus(401)
             } else {
               // game exists
+              const gameInfo: gameSettings = {
+                smallBlind: 0,
+                startingFunds: 0,
+                players: [],
+                gameMasterHash: sha256(result.rows[0].game_master).toString(),
+              }
               await client
                 .query(createPlayerQuery, createPlayerValues)
                 .catch((err) => {
                   console.error(err.stack)
                   return res.sendStatus(500)
                 })
-              const gameInfo: gameSettings = {
-                smallBlind: 0,
-                startingFunds: 0,
-                players: [],
-              }
               await client
                 .query(getGameInfoQuery, getGameInfoValues)
                 .then((result) => {
@@ -203,11 +201,30 @@ app.get(
               await client
                 .query(getPlayersInRoomQuery, getPlayersInRoomValues)
                 .then((result) => {
+                  const message = {
+                    data: {
+                      type: 'playerJoined',
+                      nickname: req.query.nickname as string,
+                      playerHash: sha256(req.query.playerToken).toString(),
+                    },
+                    token: '',
+                  }
+                  // We know that the values will be defined
+                  // because we checked it with celebrate.
                   result.rows.forEach((row) => {
                     gameInfo.players.push({
                       nickname: row.nickname,
-                      playerId: 1,
+                      playerHash: sha256(row.token).toString(),
                     })
+                    message.token = row.token
+                    getMessaging()
+                      .send(message)
+                      .then((response) => {
+                        console.log('Successfully sent message:', response)
+                      })
+                      .catch((error) => {
+                        console.log('Error sending message:', error)
+                      })
                   })
                 })
                 .catch((err) => {

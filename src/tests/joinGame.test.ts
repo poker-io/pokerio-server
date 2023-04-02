@@ -2,6 +2,7 @@ import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../databaseConnection'
 import type { gameSettings } from '../app'
+import sha256 from 'crypto-js/sha256'
 
 test('Join game, wrong args', (doneJoin) => {
   request(app)
@@ -28,18 +29,19 @@ test('Join game, wrong args', (doneJoin) => {
 })
 
 test('Join game, correct arguments', async () => {
-  const imposibleFirbaseToken = 'TESTJOIN'
+  const gameMasterToken = 'TESTJOIN'
   const playerToken = 'TESTJOIN2'
-  const nick = 'NICKJOIN'
+  const gameMasterNick = 'NICKJOIN'
+  const playerNick = 'NICKJOIN2'
   const client = getClient()
   await client.connect()
 
   await request(app)
     .get(
       '/createGame/?creatorToken='
-        .concat(imposibleFirbaseToken)
+        .concat(gameMasterToken)
         .concat('&nickname=')
-        .concat(nick)
+        .concat(gameMasterNick)
         .concat('&startingFunds=2137&smallBlind=60')
     )
     .expect(200)
@@ -47,28 +49,38 @@ test('Join game, correct arguments', async () => {
   const expectedInfo: gameSettings = {
     smallBlind: 60,
     startingFunds: 2137,
-    players: [{ nickname: nick, playerId: 1 }, { nickname: 'yellow', playerId: 1 }]
+    players: [{
+      nickname: gameMasterNick,
+      playerHash: sha256(gameMasterToken).toString()
+    },
+    {
+      nickname: playerNick,
+      playerHash: sha256(playerToken).toString()
+    }],
+    gameMasterHash: sha256(gameMasterToken).toString()
   }
   let gameId = 'game_not_found'
   const findGameQuery = 'SELECT game_id FROM Games where game_master=$1'
-  await client.query(findGameQuery, [imposibleFirbaseToken]).then(
+  await client.query(findGameQuery, [gameMasterToken]).then(
     async (result) => {
       gameId = (result.rows[0].game_id).toString()
       await request(app)
         .get('/joinGame/?playerToken='
           .concat(playerToken)
-          .concat('&nickname=yellow&gameId=')
+          .concat('&nickname=')
+          .concat(playerNick)
+          .concat('&gameId=')
           .concat(gameId))
         .expect(expectedInfo)
     }).finally(async () => {
     const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
-    await client.query(deleteGameQuery, [imposibleFirbaseToken])
+    await client.query(deleteGameQuery, [gameMasterToken])
       .catch((err) => {
         console.log(err.stack)
       })
     const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1 or token = $2'
     await client
-      .query(deletePlayerQuery, [playerToken, imposibleFirbaseToken])
+      .query(deletePlayerQuery, [playerToken, gameMasterToken])
       .catch((err) => {
         console.log(err.stack)
       })
