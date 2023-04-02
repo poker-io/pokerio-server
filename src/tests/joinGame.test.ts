@@ -1,6 +1,7 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../databaseConnection'
+import type { gameSettings } from '../app'
 
 test('Join game, wrong args', (doneJoin) => {
   request(app)
@@ -39,9 +40,15 @@ test('Join game, correct arguments', async () => {
         .concat(imposibleFirbaseToken)
         .concat('&nickname=')
         .concat(nick)
+        .concat('&startingFunds=2137&smallBlind=60')
     )
     .expect(200)
 
+  const expectedInfo: gameSettings = {
+    smallBlind: 60,
+    startingFunds: 2137,
+    players: [{ nickname: nick, playerId: 1 }, { nickname: 'yellow', playerId: 1 }]
+  }
   let gameId = 'game_not_found'
   const findGameQuery = 'SELECT game_id FROM Games where game_master=$1'
   await client.query(findGameQuery, [imposibleFirbaseToken]).then(
@@ -52,17 +59,19 @@ test('Join game, correct arguments', async () => {
           .concat(playerToken)
           .concat('&nickname=yellow&gameId=')
           .concat(gameId))
-        .expect(200)
-      const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
-      await client.query(deleteGameQuery, [imposibleFirbaseToken])
-        .catch((err) => {
-          console.log(err.stack)
-        })
-      const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1 or token = $2'
-      await client
-        .query(deletePlayerQuery, [playerToken, imposibleFirbaseToken])
-        .catch((err) => {
-          console.log(err.stack)
-        })
-    }).finally(() => { client.end() })
+        .expect(expectedInfo)
+    }).finally(async () => {
+    const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
+    await client.query(deleteGameQuery, [imposibleFirbaseToken])
+      .catch((err) => {
+        console.log(err.stack)
+      })
+    const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1 or token = $2'
+    await client
+      .query(deletePlayerQuery, [playerToken, imposibleFirbaseToken])
+      .catch((err) => {
+        console.log(err.stack)
+      })
+    client.end()
+  })
 })

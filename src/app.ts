@@ -7,6 +7,15 @@ export const port = 42069
 
 const startingFundsDefault = 1000
 const smallBlindDefault = 100
+export interface playerInfo {
+  nickname: string
+  playerId: number
+}
+export interface gameSettings {
+  smallBlind: number
+  startingFunds: number
+  players: playerInfo[]
+}
 
 const errorHandling = (error, req, res, next) => {
   if (isCelebrateError(error)) {
@@ -154,10 +163,11 @@ app.get(
           null,
           null,
         ]
-        // const getGameInfoQuery = 'SELECT * FROM Games WHERE game_id=$1'
-        // const getGameInfoValues = [req.query.gameId]
-        // const getPlayersInRoomQuery = 'SELECT nickname FROM Players WHERE game_id=$1'
-        // const getPlayersInRoomValues = [req.query.gameId]
+        const getGameInfoQuery = 'SELECT * FROM Games WHERE game_id=$1'
+        const getGameInfoValues = [req.query.gameId]
+        const getPlayersInRoomQuery =
+          'SELECT nickname FROM Players WHERE game_id=$1'
+        const getPlayersInRoomValues = [req.query.gameId]
 
         await client
           .query(checkIfGameExistsQuery, gameCheckValues)
@@ -173,28 +183,38 @@ app.get(
                   console.error(err.stack)
                   return res.sendStatus(500)
                 })
-              // const smallBlind = new Promise<number>((resolve, reject) => {})
-              // const startingFunds = new Promise<number>((resolve, reject) => {})
-              // const players = new Promise<number>((resolve, reject) => {})
-
-              // const gameInfo = {
-              //   smallBlind: null,
-              //   startingFunds: null,
-              //   players: [{ nickname: null }]
-              // }
-              // await client.query(getGameInfoQuery, getGameInfoValues)
-              //   .then((result) => {
-              //     gameInfo.smallBlind = result.rows[0].small_blind
-              //     gameInfo.startingFunds = result.rows[0].starting_funds
-              //   })
-              // await client.query(getPlayersInRoomQuery, getPlayersInRoomValues)
-              //   .then((result) => {
-              //     result.rows.forEach((row) => {
-              //       gameInfo.players.push(row.nickname)
-              //     })
-              //   })
-              // res.send(gameInfo)
-              return res.sendStatus(200)
+              const gameInfo: gameSettings = {
+                smallBlind: 0,
+                startingFunds: 0,
+                players: [],
+              }
+              await client
+                .query(getGameInfoQuery, getGameInfoValues)
+                .then((result) => {
+                  gameInfo.smallBlind = parseInt(result.rows[0].small_blind)
+                  gameInfo.startingFunds = parseInt(
+                    result.rows[0].starting_funds
+                  )
+                })
+                .catch((err) => {
+                  console.error(err.stack)
+                  return res.sendStatus(500)
+                })
+              await client
+                .query(getPlayersInRoomQuery, getPlayersInRoomValues)
+                .then((result) => {
+                  result.rows.forEach((row) => {
+                    gameInfo.players.push({
+                      nickname: row.nickname,
+                      playerId: 1,
+                    })
+                  })
+                })
+                .catch((err) => {
+                  console.error(err.stack)
+                  return res.sendStatus(500)
+                })
+              res.send(gameInfo)
             }
           })
       })
