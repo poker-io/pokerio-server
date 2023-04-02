@@ -34,6 +34,12 @@ export interface gameSettings {
   gameMasterHash: string
 }
 
+interface newGameInfo {
+  gameKey: number
+  startingFunds: number
+  smallBlind: number
+}
+
 const errorHandling = (error, req, res, next) => {
   if (isCelebrateError(error)) {
     return res.status(400).send({
@@ -117,12 +123,20 @@ app.get(
                 req.query.creatorToken,
               ])
               .then(() => {
-                res.send({
+                const newGame: newGameInfo = {
                   gameKey: result.rows[0].insert_with_random_key,
-                  startingFunds:
-                    req.query.startingFunds ?? startingFundsDefault,
-                  smallBlind: req.query.smallBlind ?? smallBlindDefault,
-                })
+                  startingFunds: startingFundsDefault,
+                  smallBlind: smallBlindDefault,
+                }
+                if (req.query.startingFunds !== undefined) {
+                  newGame.startingFunds = parseInt(
+                    req.query.startingFunds as string
+                  )
+                }
+                if (req.query.smallBlind !== undefined) {
+                  newGame.smallBlind = parseInt(req.query.smallBlind as string)
+                }
+                res.send(newGame)
               })
               .catch((err) => {
                 console.error(err.stack)
