@@ -20,12 +20,17 @@ admin.initializeApp({
 })
 
 const verifyFCMToken = async (fcmToken) => {
-  return await admin.messaging().send(
-    {
-      token: fcmToken,
-    },
-    true
-  )
+  if (process.env.JEST_WORKER_ID !== undefined) {
+    // We don't want to verify tokens when testing
+    return true
+  } else {
+    return await admin.messaging().send(
+      {
+        token: fcmToken,
+      },
+      true
+    )
+  }
 }
 
 export const app = express()
@@ -88,13 +93,10 @@ app.get(
   }),
   async (req, res) => {
     let correctToken = true
-    if (process.env.JEST_WORKER_ID === undefined) {
-      // We don't want to verify tokens when testing
-      await verifyFCMToken(req.query.playerToken).catch((err) => {
-        console.error(err)
-        correctToken = false
-      })
-    }
+    await verifyFCMToken(req.query.playerToken).catch((err) => {
+      console.error(err)
+      correctToken = false
+    })
     if (!correctToken) {
       return res.sendStatus(400)
     }
@@ -195,13 +197,10 @@ app.get(
   }),
   async (req, res) => {
     let correctToken = true
-    if (process.env.JEST_WORKER_ID === undefined) {
-      // We don't want to verify tokens when testing
-      await verifyFCMToken(req.query.playerToken).catch((err) => {
-        console.error(err)
-        correctToken = false
-      })
-    }
+    await verifyFCMToken(req.query.playerToken).catch((err) => {
+      console.error(err)
+      correctToken = false
+    })
     if (!correctToken) {
       return res.sendStatus(400)
     }
@@ -234,10 +233,8 @@ app.get(
           .query(checkIfGameExistsQuery, gameCheckValues)
           .then(async (result) => {
             if (result.rowCount === 0) {
-              // game does not exist
               return res.sendStatus(401)
             } else {
-              // game exists
               const gameInfo: gameSettings = {
                 smallBlind: 0,
                 startingFunds: 0,
@@ -273,7 +270,7 @@ app.get(
                     },
                     token: '',
                   }
-                  // We know that the values will be defined
+                  // We know that the nickname will be defined
                   // because we checked it with celebrate.
                   result.rows.forEach(async (row) => {
                     gameInfo.players.push({
