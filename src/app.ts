@@ -209,8 +209,8 @@ app.get(
     client
       .connect()
       .then(async () => {
-        const checkIfGameExistsQuery = // todo add check if game is full
-          'SELECT game_master FROM Games WHERE game_id=$1'
+        const checkIfGameExistsQuery =
+          'SELECT game_master FROM Games g join Players p on g.game_id = p.game_id WHERE g.game_id = $1 group by g.game_id having count(p.token) < 8'
         const gameCheckValues = [req.query.gameId]
         const createPlayerQuery =
           'INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) VALUES($1, $2, $3, $4, $5, $6, $7, $8)'
