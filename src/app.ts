@@ -66,8 +66,6 @@ const rateLimiter = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
 })
 
-app.use(rateLimiter)
-
 app.get('/test', (req, res) => {
   res.send('Hello from typescript express!')
 })
@@ -316,3 +314,4 @@ app.get(
   }
 )
 app.use(errorHandling)
+app.use(rateLimiter)
