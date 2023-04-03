@@ -5,6 +5,7 @@ import sha256 from 'crypto-js/sha256'
 import { getMessaging } from 'firebase-admin/messaging'
 import admin from 'firebase-admin'
 import { readFileSync } from 'fs'
+import { rateLimit } from 'express-rate-limit'
 
 const serviceAccount = JSON.parse(
   readFileSync('./src/serviceAccount.json', 'utf-8')
@@ -59,6 +60,13 @@ const errorHandling = (error, req, res, next) => {
 
   return next(error)
 }
+
+const rateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // limit each IP to 100 requests per windowMs
+})
+
+app.use(rateLimiter)
 
 app.get('/test', (req, res) => {
   res.send('Hello from typescript express!')
