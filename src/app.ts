@@ -18,6 +18,15 @@ admin.initializeApp({
   }),
 })
 
+const verifyFCMToken = async (fcmToken) => {
+  return await admin.messaging().send(
+    {
+      token: fcmToken,
+    },
+    true
+  )
+}
+
 export const app = express()
 export const port = 42069
 
@@ -69,8 +78,18 @@ app.get(
       smallBlind: Joi.number().min(1).label('Small Blind'),
     }),
   }),
-  (req, res) => {
-    // todo add firebase validation
+  async (req, res) => {
+    let correctToken = true
+    if (process.env.JEST_WORKER_ID === undefined) {
+      // We don't want to verify tokens when testing
+      await verifyFCMToken(req.query.playerToken).catch((err) => {
+        console.error(err)
+        correctToken = false
+      })
+    }
+    if (!correctToken) {
+      return res.sendStatus(400)
+    }
 
     const client = getClient()
     client
@@ -166,9 +185,18 @@ app.get(
       gameId: Joi.number().required().min(0).max(999999).label('gameId'),
     }),
   }),
-  (req, res) => {
-    // todo add firebase validation
-
+  async (req, res) => {
+    let correctToken = true
+    if (process.env.JEST_WORKER_ID === undefined) {
+      // We don't want to verify tokens when testing
+      await verifyFCMToken(req.query.playerToken).catch((err) => {
+        console.error(err)
+        correctToken = false
+      })
+    }
+    if (!correctToken) {
+      return res.sendStatus(400)
+    }
     const client = getClient()
 
     client
@@ -244,7 +272,11 @@ app.get(
                       nickname: row.nickname,
                       playerHash: sha256(row.token).toString(),
                     })
-                    if (row.token !== req.query.playerToken) {
+                    if (
+                      row.token !== req.query.playerToken &&
+                      process.env.JEST_WORKER_ID === undefined
+                    ) {
+                      // Again, we don't want to send messages when testing.
                       // Sending firebase message to all players except the one who just joined.
                       message.token = row.token
                       await getMessaging()
