@@ -237,13 +237,13 @@ app.get(
                   const message = {
                     data: {
                       type: 'playerJoined',
+                      // We know that the nickname will be defined
+                      // because we checked it with celebrate.
                       nickname: req.query.nickname as string,
                       playerHash: sha256(req.query.playerToken).toString(),
                     },
                     token: '',
                   }
-                  // We know that the nickname will be defined
-                  // because we checked it with celebrate.
                   result.rows.forEach(async (row) => {
                     gameInfo.players.push({
                       nickname: row.nickname,
