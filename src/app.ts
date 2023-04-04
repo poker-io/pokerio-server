@@ -181,7 +181,7 @@ app.get(
     }),
   }),
   async (req, res) => {
-    if (!(await verifyFCMToken(req.query.creatorToken))) {
+    if (!(await verifyFCMToken(req.query.playerToken))) {
       return res.sendStatus(400)
     }
 
