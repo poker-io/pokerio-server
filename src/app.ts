@@ -24,12 +24,19 @@ const verifyFCMToken = async (fcmToken) => {
     // We don't want to verify tokens when testing
     return true
   } else {
-    return await admin.messaging().send(
-      {
-        token: fcmToken,
-      },
-      true
-    )
+    let sentSuccessfully = true
+    await admin
+      .messaging()
+      .send(
+        {
+          token: fcmToken,
+        },
+        true
+      )
+      .catch(() => {
+        sentSuccessfully = false
+      })
+    return sentSuccessfully
   }
 }
 
@@ -73,7 +80,6 @@ const rateLimiter = rateLimit({
 app.use(rateLimiter)
 
 app.get('/test', (req, res) => {
-  console.log('Test request received')
   res.send('Hello from typescript express!')
 })
 
@@ -92,12 +98,7 @@ app.get(
     }),
   }),
   async (req, res) => {
-    let correctToken = true
-    await verifyFCMToken(req.query.playerToken).catch((err) => {
-      console.error(err)
-      correctToken = false
-    })
-    if (!correctToken) {
+    if (!(await verifyFCMToken(req.query.creatorToken))) {
       return res.sendStatus(400)
     }
 
@@ -135,53 +136,37 @@ app.get(
           req.query.creatorToken,
         ]
 
-        await client
-          .query(createPlayerQuery, createPlayerValues)
-          .catch(async (err) => {
-            console.error(err.stack)
-            await client.end()
-            return res.sendStatus(500)
-          })
-
-        await client
-          .query(createGameQuery, values)
-          .then(async (result) => {
-            await client
-              .query('UPDATE Players SET game_id=$1 WHERE token=$2', [
-                result.rows[0].insert_with_random_key,
-                req.query.creatorToken,
-              ])
-              .then(() => {
-                const newGame: newGameInfo = {
-                  gameKey: result.rows[0].insert_with_random_key,
-                  startingFunds: startingFundsDefault,
-                  smallBlind: smallBlindDefault,
-                }
-                if (req.query.startingFunds !== undefined) {
-                  newGame.startingFunds = parseInt(
-                    req.query.startingFunds as string
-                  )
-                }
-                if (req.query.smallBlind !== undefined) {
-                  newGame.smallBlind = parseInt(req.query.smallBlind as string)
-                }
-                res.send(newGame)
-              })
-              .catch((err) => {
-                console.error(err.stack)
-                return res.sendStatus(500)
-              })
-          })
-          .catch((err) => {
-            console.error(err.stack)
-            return res.sendStatus(500)
-          })
-        await client.end()
+        await client.query(createPlayerQuery, createPlayerValues)
+        await client.query(createGameQuery, values).then(async (result) => {
+          await client
+            .query('UPDATE Players SET game_id=$1 WHERE token=$2', [
+              result.rows[0].insert_with_random_key,
+              req.query.creatorToken,
+            ])
+            .then(() => {
+              const newGame: newGameInfo = {
+                gameKey: result.rows[0].insert_with_random_key,
+                startingFunds: startingFundsDefault,
+                smallBlind: smallBlindDefault,
+              }
+              if (req.query.startingFunds !== undefined) {
+                newGame.startingFunds = parseInt(
+                  req.query.startingFunds as string
+                )
+              }
+              if (req.query.smallBlind !== undefined) {
+                newGame.smallBlind = parseInt(req.query.smallBlind as string)
+              }
+              res.send(newGame)
+            })
+        })
       })
       .catch(async (err) => {
         console.log(err.stack)
-        await client.end()
         return res.sendStatus(500)
+      })
+      .finally(async () => {
+        await client.end()
       })
   }
 )
@@ -196,14 +181,10 @@ app.get(
     }),
   }),
   async (req, res) => {
-    let correctToken = true
-    await verifyFCMToken(req.query.playerToken).catch((err) => {
-      console.error(err)
-      correctToken = false
-    })
-    if (!correctToken) {
+    if (!(await verifyFCMToken(req.query.creatorToken))) {
       return res.sendStatus(400)
     }
+
     const client = getClient()
 
     client
@@ -241,12 +222,7 @@ app.get(
                 players: [],
                 gameMasterHash: sha256(result.rows[0].game_master).toString(),
               }
-              await client
-                .query(createPlayerQuery, createPlayerValues)
-                .catch((err) => {
-                  console.error(err.stack)
-                  return res.sendStatus(500)
-                })
+              await client.query(createPlayerQuery, createPlayerValues)
               await client
                 .query(getGameInfoQuery, getGameInfoValues)
                 .then((result) => {
@@ -254,10 +230,6 @@ app.get(
                   gameInfo.startingFunds = parseInt(
                     result.rows[0].starting_funds
                   )
-                })
-                .catch((err) => {
-                  console.error(err.stack)
-                  return res.sendStatus(500)
                 })
               await client
                 .query(getPlayersInRoomQuery, getPlayersInRoomValues)
@@ -294,10 +266,6 @@ app.get(
                         })
                     }
                   })
-                })
-                .catch((err) => {
-                  console.error(err.stack)
-                  return res.sendStatus(500)
                 })
               res.send(gameInfo)
             }
