@@ -29,6 +29,7 @@ jobs:
           USER: ${{ secrets.SERVER_USERNAME }}
           KEY: ${{ secrets.SERVER_KEY }}
         run: |
+          eval $(ssh-agent -s)
           echo "$KEY" | tr -d '\r' | ssh-add -
           mkdir -p ~/.ssh
           echo "StrictHostKeyChecking no" >> ~/.ssh/config
