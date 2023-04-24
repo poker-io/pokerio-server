@@ -31,10 +31,10 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "StrictHostKeyChecking no" >> ~/.ssh/config
-          echo ${KEY} > ~/.ssh/ssh-key-2023-04-03.key
-          sed -i -e '$a\' ~/.ssh/ssh-key-2023-04-03.key
-          chmod 600 ~/.ssh/ssh-key-2023-04-03.key
-          ssh -i ~/.ssh/ssh-key-2023-04-03.key -fN -L 5432:localhost:5432 ${USER}@${HOST}
+          echo ${KEY} > ~/.ssh/id_rsa
+          chmod 700 ~/.ssh
+          chmod 400 ~/.ssh/id_rsa
+          ssh -fN -L 5432:localhost:5432 ${USER}@${HOST}
 
       - name: Add firebase service account json file
         env:
