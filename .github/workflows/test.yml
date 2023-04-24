@@ -50,7 +50,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         uses: codecov/codecov-action@v3
 
-  # Only run deploy on push to main when tests succeed
+  # Run deploy on push to main only if tests succeed"
   deploy:
     runs-on: ubuntu-latest
     needs: test
