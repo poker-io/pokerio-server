@@ -33,7 +33,7 @@ jobs:
           echo "$KEY" | tr -d '\r' | ssh-add -
           mkdir -p ~/.ssh
           echo "StrictHostKeyChecking no" >> ~/.ssh/config
-          ssh -v -fN -L 5432:localhost:5432 ${USER}@${HOST}
+          ssh -fN -L 5432:localhost:5432 ${USER}@${HOST}
 
       - name: Add firebase service account json file
         env:
