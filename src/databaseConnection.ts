@@ -7,7 +7,7 @@ export function getClient(): any {
   return new Client({
     user,
     password,
-    database: 'bd',
+    database: 'pokerio',
     port: 5432,
     host: 'localhost',
   })
