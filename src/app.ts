@@ -42,10 +42,8 @@ const rateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 100, // limit each IP to 100 requests per windowMs
 })
-app.use(rateLimiter)
 
-app.use('', joinGame)
-
-app.use('', createGame)
+app.use('', rateLimiter, joinGame)
+app.use('', rateLimiter, createGame)
 
 app.use(errorHandling)
