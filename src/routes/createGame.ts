@@ -12,7 +12,8 @@ import { rateLimiter } from '../utils/rateLimiter'
 const router: Router = express.Router()
 
 router.get(
-  '/createGame', rateLimiter,
+  '/createGame',
+  rateLimiter,
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
       creatorToken: Joi.string()
