@@ -1,18 +1,13 @@
-import { getClient } from '../databaseConnection'
+import { getClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import sha256 from 'crypto-js/sha256'
 import { getMessaging } from 'firebase-admin/messaging'
 import { type gameSettings } from '../app'
-import { verifyFCMToken } from '../firebase'
+import { verifyFCMToken } from '../utils/firebase'
 import express, { type Router } from 'express'
-import rateLimit from 'express-rate-limit'
+import { rateLimiter } from '../utils/rateLimiter'
 
 const router: Router = express.Router()
-
-const rateLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // limit each IP to 100 requests per windowMs
-})
 
 router.get(
   '/joinGame', rateLimiter,

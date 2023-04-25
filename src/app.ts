@@ -1,7 +1,6 @@
 import express from 'express'
 import { isCelebrateError } from 'celebrate'
 
-// import { rateLimit } from 'express-rate-limit'
 import joinGame from './routes/joinGame'
 import createGame from './routes/createGame'
 
@@ -37,11 +36,6 @@ const errorHandling = (error, req, res, next) => {
 
   return next(error)
 }
-
-// const rateLimiter = rateLimit({
-//   windowMs: 60 * 1000, // 1 minute
-//   max: 100, // limit each IP to 100 requests per windowMs
-// })
 
 app.use('', joinGame)
 app.use('', createGame)
