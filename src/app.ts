@@ -4,6 +4,7 @@ import { isCelebrateError } from 'celebrate'
 import { rateLimit } from 'express-rate-limit'
 import joinGame from './routes/joinGame'
 import createGame from './routes/createGame'
+import kickPlayer from './routes/kickPlayer'
 
 export const app = express()
 export const port = 42069
@@ -52,5 +53,7 @@ app.use(rateLimiter)
 app.use(joinGame)
 
 app.use(createGame)
+
+app.use(kickPlayer)
 
 app.use(errorHandling)
