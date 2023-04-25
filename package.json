@@ -47,7 +47,8 @@
     "collectCoverage": true,
     "testEnvironment": "node",
     "collectCoverageFrom": [
-      "src/*.ts"
+      "src/*.ts",
+      "src/routes/*.ts"
     ],
     "coveragePathIgnorePatterns": [
       "src/secrets.ts"
