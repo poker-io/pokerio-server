@@ -1,11 +1,11 @@
-import { getClient } from '../databaseConnection'
+import { getClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import {
   startingFundsDefault,
   smallBlindDefault,
   type newGameInfo,
 } from '../app'
-import { verifyFCMToken } from '../firebase'
+import { verifyFCMToken } from '../utils/firebase'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()

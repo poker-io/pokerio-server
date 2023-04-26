@@ -1,6 +1,6 @@
 import { app } from '../app'
 import request from 'supertest'
-import { getClient } from '../databaseConnection'
+import { getClient } from '../utils/databaseConnection'
 import type { gameSettings } from '../app'
 import sha256 from 'crypto-js/sha256'
 
