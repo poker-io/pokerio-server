@@ -39,10 +39,13 @@ router.get(
         const setNewSmallBlindCurrentPlayerQuery = 'UPDATE Games SET small_blind_who=$1, current_player=$2 WHERE game_id=$3'
 
         await client.query(getGameQuery, [req.query.creatorToken]).then(async (getGameRes) => {
+          if (getGameRes.rowCount === 0) {
+            return res.sendStatus(400)
+          }
           await client
             .query(verifyPlayerInGameQuery, [req.query.playerToken, getGameRes.rows[0].game_id])
             .then(async (verifyRes) => {
-              if (verifyRes.rows.size === 0) {
+              if (verifyRes.rowCount === 0) {
                 return res.sendStatus(400)
               }
 
