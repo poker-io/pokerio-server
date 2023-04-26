@@ -1,6 +1,6 @@
 import { app } from '../app'
 import request from 'supertest'
-import { getClient } from '../databaseConnection'
+import { getClient } from '../utils/databaseConnection'
 
 test('Create game, wrong args', (done) => {
   request(app).get('/createGame/?creatorToken=-1').expect(400).end(done)

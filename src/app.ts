@@ -1,10 +1,11 @@
 import express from 'express'
 import { isCelebrateError } from 'celebrate'
 
-import { rateLimit } from 'express-rate-limit'
+
+import kickPlayer from './routes/kickPlayer'
 import joinGame from './routes/joinGame'
 import createGame from './routes/createGame'
-import kickPlayer from './routes/kickPlayer'
+import { rateLimiter } from './utils/rateLimiter'
 
 export const app = express()
 export const port = 42069
@@ -39,16 +40,10 @@ const errorHandling = (error, req, res, next) => {
   return next(error)
 }
 
-const rateLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // limit each IP to 100 requests per windowMs
-})
 
-app.get('/status', (req, res) => {
+app.get('/status', rateLimiter, (req, res) => {
   res.send('OK')
 })
-
-app.use(rateLimiter)
 
 app.use(joinGame)
 
