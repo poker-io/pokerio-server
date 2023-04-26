@@ -1,4 +1,5 @@
 import { getClient } from '../utils/databaseConnection'
+import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { verifyFCMToken } from '../utils/firebase'
 
@@ -7,6 +8,7 @@ const router: Router = express.Router()
 
 router.get(
   '/kickPlayer',
+  rateLimiter,
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
       creatorToken: Joi.string()
