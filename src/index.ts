@@ -1,5 +1,5 @@
 import { app, port } from './app.js'
-import { databaseInit } from './utils/databaseConnection.js'
+import { databaseInit } from './utils/databaseConnection'
 
 databaseInit()
   .then(() => {
