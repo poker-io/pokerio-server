@@ -6,9 +6,15 @@
 [![Tests](https://github.com/poker-io/pokerio-server/actions/workflows/test.yml/badge.svg)](https://github.com/poker-io/pokerio-server/blob/main/.github/workflows/test.yml)
 [![codecov](https://codecov.io/gh/poker-io/pokerio-server/branch/main/graph/badge.svg?token=4QCZNOWFZJ)](https://codecov.io/gh/poker-io/pokerio-server)
 
-## Building
+## Requirements
 
-Run `yarn install`.
+Make sure you're using node version 18 or newer. To install the appropriate
+version follow the instructions on nodejs.org.
+
+To install dependencies run:
+```
+yarn install
+```
 
 ## Running
 
@@ -19,4 +25,3 @@ Run `yarn start`.
 ## Testing
 
 We use Jest for testing. To run it, simply type `yarn test`.
-Make sure your Node's version is > v18 (`nvm install v18.15.0` to install appropriate version).
