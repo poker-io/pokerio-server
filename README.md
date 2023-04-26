@@ -17,11 +17,22 @@ To install dependencies run:
 yarn install
 ```
 
+Remember to add the `serviceAccount.json` file from Firebase under `src/` as
+well as a `secrets.ts` file that contains login credentials for the database.
+It should be similar to this:
+
+```ts
+export const user = 'pokerio-user'
+export const password = 'pokerio-password'
+
+```
+
 ## Running
 
-First you have to add firebase service account json file in src/ as serviceAccount.json.
-
 Run `yarn start`.
+
+The app will attempt to connect to a Postgres database using the details
+provided in `databaseConnection.ts`.
 
 ## Testing
 
