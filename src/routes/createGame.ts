@@ -8,10 +8,12 @@ import {
 import { verifyFCMToken } from '../utils/firebase'
 
 import express, { type Router } from 'express'
+import { rateLimiter } from '../utils/rateLimiter'
 const router: Router = express.Router()
 
 router.get(
   '/createGame',
+  rateLimiter,
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
       creatorToken: Joi.string()

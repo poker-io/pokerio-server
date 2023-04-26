@@ -5,11 +5,13 @@ import { getMessaging } from 'firebase-admin/messaging'
 import { type gameSettings } from '../app'
 import { verifyFCMToken } from '../utils/firebase'
 import express, { type Router } from 'express'
+import { rateLimiter } from '../utils/rateLimiter'
 
 const router: Router = express.Router()
 
 router.get(
   '/joinGame',
+  rateLimiter,
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
       playerToken: Joi.string().required().min(1).max(250).label('playerToken'),
