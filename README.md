@@ -12,6 +12,7 @@ Make sure you're using node version 18 or newer. To install the appropriate
 version follow the instructions on nodejs.org.
 
 To install dependencies run:
+
 ```
 yarn install
 ```
