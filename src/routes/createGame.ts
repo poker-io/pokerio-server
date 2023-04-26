@@ -19,9 +19,9 @@ router.get(
         .min(1)
         .max(250)
         .label('creatorToken'),
-      nickname: Joi.string().required().max(20).label('Nickname'),
-      startingFunds: Joi.number().min(1).label('Starting Funds'),
-      smallBlind: Joi.number().min(1).label('Small Blind'),
+      nickname: Joi.string().required().max(20).label('nickname'),
+      startingFunds: Joi.number().min(1).label('startingFunds'),
+      smallBlind: Joi.number().min(1).label('smallBlind'),
     }),
   }),
   async (req, res) => {
