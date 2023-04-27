@@ -36,7 +36,8 @@ router.post(
       .connect()
       .then(async () => {
         const getGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
-        const setNewSmallBlindStartingFunds = 'UPDATE Games SET  small_blind=$1, starting_funds=$2 WHERE game_id=$3'
+        const setNewSmallBlindStartingFunds =
+          'UPDATE Games SET  small_blind=$1, starting_funds=$2 WHERE game_id=$3'
 
         await client
           .query(getGameQuery, [req.query.creatorToken])
@@ -45,7 +46,11 @@ router.post(
               return res.sendStatus(400)
             }
 
-            await client.query(setNewSmallBlindStartingFunds, [req.query.smallBlind, req.query.startingFunds, getGameRes.rows[0].game_id])
+            await client.query(setNewSmallBlindStartingFunds, [
+              req.query.smallBlind,
+              req.query.startingFunds,
+              getGameRes.rows[0].game_id,
+            ])
 
             return res.sendStatus(200)
           })
