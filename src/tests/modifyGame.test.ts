@@ -4,23 +4,32 @@ import { getClient } from '../utils/databaseConnection'
 
 test('Modify game, wrong args', async () => {
   const client = getClient()
-  const insertGameCreator = 'INSERT INTO Players (token, nickname, turn) VALUES ($1, $2, $3)'
-  const deletePlayerQuery =
-          'DELETE FROM Players WHERE token = $1'
-  await client.connect().then(async () => {
-    await request(app).post('/modifyGame').expect(400)
-    await request(app).post('/modifyGame?creatorToken=2137').expect(400)
+  const insertGameCreator =
+    'INSERT INTO Players (token, nickname, turn) VALUES ($1, $2, $3)'
+  const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
+  await client
+    .connect()
+    .then(async () => {
+      await request(app).post('/modifyGame').expect(400)
+      await request(app).post('/modifyGame?creatorToken=2137').expect(400)
 
-    await client.query(insertGameCreator, [2137, '2137', 0])
+      await client.query(insertGameCreator, [2137, '2137', 0])
 
-    await request(app).post('/modifyGame?creatorToken=2137').expect(400)
-    await request(app).post('/modifyGame?creatorToken=2137&smallBlind=asd').expect(400)
-    await request(app).post('/modifyGame?creatorToken=2137&startingFunnds=dasdasd').expect(400)
-    await request(app).post('/modifyGame?creatorToken=2137&startingFunds=1&smallBlind=220').expect(400)
-  }).finally(async () => {
-    await client.query(deletePlayerQuery, [2137])
-    await client.end()
-  })
+      await request(app).post('/modifyGame?creatorToken=2137').expect(400)
+      await request(app)
+        .post('/modifyGame?creatorToken=2137&smallBlind=asd')
+        .expect(400)
+      await request(app)
+        .post('/modifyGame?creatorToken=2137&startingFunnds=dasdasd')
+        .expect(400)
+      await request(app)
+        .post('/modifyGame?creatorToken=2137&startingFunds=1&smallBlind=220')
+        .expect(400)
+    })
+    .finally(async () => {
+      await client.query(deletePlayerQuery, [2137])
+      await client.end()
+    })
 })
 
 test('Modify game, correct arguments', async () => {
@@ -30,9 +39,9 @@ test('Modify game, correct arguments', async () => {
   const newStartingFunds = 1337
   const findGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
   const deleteGameQuery = 'DELETE FROM Games WHERE game_id=$1'
-  const verifyGameWasModifiedQuery = 'SELECT game_id FROM Games WHERE game_id=$1 AND small_blind=$2 AND starting_funds=$3'
-  const deletePlayerQuery =
-  'DELETE FROM Players WHERE token = $1'
+  const verifyGameWasModifiedQuery =
+    'SELECT game_id FROM Games WHERE game_id=$1 AND small_blind=$2 AND starting_funds=$3'
+  const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
   let gameId
 
   const client = await getClient()
@@ -47,7 +56,16 @@ test('Modify game, correct arguments', async () => {
     )
     .expect(200)
 
-  await request(app).post('/modifyGame?creatorToken='.concat(gameMasterToken).concat('&smallBlind=').concat(newSmallBlind.toString()).concat('&startingFunds=').concat(newStartingFunds.toString())).expect(200)
+  await request(app)
+    .post(
+      '/modifyGame?creatorToken='
+        .concat(gameMasterToken)
+        .concat('&smallBlind=')
+        .concat(newSmallBlind.toString())
+        .concat('&startingFunds=')
+        .concat(newStartingFunds.toString())
+    )
+    .expect(200)
 
   await client
     .query(findGameQuery, [gameMasterToken])
@@ -55,7 +73,11 @@ test('Modify game, correct arguments', async () => {
       gameId = result.rows[0].game_id.toString()
 
       await client
-        .query(verifyGameWasModifiedQuery, [gameId, newSmallBlind, newStartingFunds])
+        .query(verifyGameWasModifiedQuery, [
+          gameId,
+          newSmallBlind,
+          newStartingFunds,
+        ])
         .then(async (modified) => {
           expect(modified.rowCount).toEqual(1)
         })
@@ -65,11 +87,9 @@ test('Modify game, correct arguments', async () => {
       await client.query(deleteGameQuery, [gameId]).catch((err) => {
         console.log(err.stack)
       })
-      await client
-        .query(deletePlayerQuery, [gameMasterToken])
-        .catch((err) => {
-          console.log(err.stack)
-        })
+      await client.query(deletePlayerQuery, [gameMasterToken]).catch((err) => {
+        console.log(err.stack)
+      })
       await client.end()
     })
 })

@@ -21,13 +21,7 @@ router.post(
     }),
   }),
   async (req, res) => {
-    if (
-      !(
-        (await verifyFCMToken(req.query.creatorToken)) &&
-        (await verifyFCMToken(req.query.playerToken))
-      ) ||
-      req.query.creatorToken === req.query.playerToken
-    ) {
+    if (!(await verifyFCMToken(req.query.creatorToken))) {
       return res.sendStatus(400)
     }
 
@@ -35,20 +29,31 @@ router.post(
     client
       .connect()
       .then(async () => {
+        // Define queries
         const getGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
-        const setNewSmallBlindStartingFunds = 'UPDATE Games SET  small_blind=$1, starting_funds=$2 WHERE game_id=$3'
+        const setNewSmallBlindStartingFunds =
+          'UPDATE Games SET  small_blind=$1, starting_funds=$2 WHERE game_id=$3'
 
-        await client
-          .query(getGameQuery, [req.query.creatorToken])
-          .then(async (getGameRes) => {
-            if (getGameRes.rowCount === 0) {
-              return res.sendStatus(400)
-            }
+        // Check if games exist
+        const getGameResult = await client.query(getGameQuery, [
+          req.query.creatorToken,
+        ])
 
-            await client.query(setNewSmallBlindStartingFunds, [req.query.smallBlind, req.query.startingFunds, getGameRes.rows[0].game_id])
+        if (getGameResult.rowCount === 0) {
+          return res.sendStatus(400)
+        }
+        const gameId = getGameResult.rows[0].game_id
 
-            return res.sendStatus(200)
-          })
+        // Update settings
+        await client.query(setNewSmallBlindStartingFunds, [
+          req.query.smallBlind,
+          req.query.startingFunds,
+          gameId,
+        ])
+
+        // TODO: Send message (after PR #35 is merged)
+
+        return res.sendStatus(200)
       })
       .catch(async (err) => {
         console.log(err.stack)
