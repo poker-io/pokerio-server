@@ -16,7 +16,7 @@ router.get(
     }),
   }),
   async (req, res) => {
-    if (!await verifyFCMToken(req.query.playerToken)) {
+    if (!(await verifyFCMToken(req.query.playerToken))) {
       return res.sendStatus(400)
     }
 
@@ -44,15 +44,14 @@ router.get(
               token: '',
             }
             await client.query(removePlayer, [req.query.playerToken])
-            await client.query(
-              getPlayerTokens,
-              [getGameIdResult.rows[0].game_id]
-            ).then((tokensResult) => {
-              tokensResult.rows.forEach(async (row) => {
-                message.token = row.token
-                await sendFirebaseMessage(message)
+            await client
+              .query(getPlayerTokens, [getGameIdResult.rows[0].game_id])
+              .then((tokensResult) => {
+                tokensResult.rows.forEach(async (row) => {
+                  message.token = row.token
+                  await sendFirebaseMessage(message)
+                })
               })
-            })
           })
       })
       .catch(async (err) => {
