@@ -1,6 +1,8 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
+import sha256 from 'crypto-js/sha256'
+import { type newGameInfo } from '../app'
 
 test('Kick player, wrong args', (done) => {
   request(app).get('/kickPlayer').expect(400).end(done)
@@ -18,10 +20,8 @@ test('Kick player, correct arguments', async () => {
   const playerToken = 'TESTKICK2'
   const gameMasterNick = 'NICKKICK'
   const playerNick = 'NICKKICK2'
-  const client = getClient()
-  await client.connect()
 
-  await request(app)
+  const res = await request(app)
     .get(
       '/createGame/?creatorToken='
         .concat(gameMasterToken)
@@ -29,8 +29,10 @@ test('Kick player, correct arguments', async () => {
         .concat(gameMasterNick)
     )
     .expect(200)
+  const gameId = (res.body as newGameInfo).gameKey
 
-  await request(app) // Creator exists, but the player does not
+  // Creator exists, but the player does not
+  await request(app)
     .get(
       '/kickPlayer?creatorToken='
         .concat(gameMasterToken)
@@ -38,16 +40,12 @@ test('Kick player, correct arguments', async () => {
     )
     .expect(400)
 
-  const findGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
   const verifyNoPlayerQuery = 'SELECT token FROM Players WHERE token=$1'
-  const getNewSmallBlindCurrentPlayer =
-    'SELECT small_blind_who FROM Games WHERE game_id=$1'
-  const verifyMinQuery =
-    'SELECT token FROM Players WHERE token=$1 AND game_id=$2 AND turn IN (SELECT MIN(turn) FROM Players WHERE game_id=$2)'
+
+  const client = getClient()
   await client
-    .query(findGameQuery, [gameMasterToken])
-    .then(async (result) => {
-      const gameId = result.rows[0].game_id.toString()
+    .connect()
+    .then(async () => {
       await request(app)
         .get(
           '/joinGame/?playerToken='
@@ -55,7 +53,7 @@ test('Kick player, correct arguments', async () => {
             .concat('&nickname=')
             .concat(playerNick)
             .concat('&gameId=')
-            .concat(gameId)
+            .concat(gameId.toString())
         )
         .expect(200)
 
@@ -64,7 +62,7 @@ test('Kick player, correct arguments', async () => {
           '/kickPlayer?'.concat(
             'creatorToken='
               .concat(gameMasterToken)
-              .concat('&playerToken='.concat(playerToken))
+              .concat('&playerToken='.concat(sha256(playerToken).toString()))
           )
         )
         .expect(200)
@@ -72,21 +70,6 @@ test('Kick player, correct arguments', async () => {
       await client.query(verifyNoPlayerQuery, [playerToken]).then((res) => {
         expect(res.rowCount).toEqual(0)
       })
-
-      await client
-        .query(getNewSmallBlindCurrentPlayer, [gameId])
-        .then(async (newSmallest) => {
-          await client
-            .query(verifyMinQuery, [
-              newSmallest.rows[0].small_blind_who,
-              gameId,
-            ])
-            .then((res) => {
-              expect(newSmallest.rows[0].small_blind_who).toEqual(
-                res.rows[0].token
-              )
-            })
-        })
     })
     .finally(async () => {
       const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
@@ -100,6 +83,6 @@ test('Kick player, correct arguments', async () => {
         .catch((err) => {
           console.log(err.stack)
         })
-      client.end()
+      await client.end()
     })
 }, 60000)

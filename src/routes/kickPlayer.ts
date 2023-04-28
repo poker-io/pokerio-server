@@ -34,8 +34,6 @@ router.get(
       .then(async () => {
         // Define queries
         const getGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
-        const verifyPlayerInGameQuery =
-          'SELECT token FROM Players WHERE token=$1 AND game_id=$2'
         const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
         const deletePlayerQuery = 'DELETE FROM Players WHERE token=$1'
 
@@ -49,19 +47,22 @@ router.get(
         }
         const gameId = getGameResult.rows[0].game_id
 
-        const verifyPlayerInGameResult = await client.query(
-          verifyPlayerInGameQuery,
-          [req.query.playerToken, gameId]
-        )
+        // Verify player is in game and kick
+        const getPlayersResult = await client.query(getPlayersQuery, [gameId])
+        let playerInGame = false
 
-        if (verifyPlayerInGameResult.rowCount === 0) {
+        getPlayersResult.rows.forEach((row) => {
+          if (sha256(row.token).toString() === req.query.playerToken) {
+            playerInGame = true
+          }
+        })
+
+        if (!playerInGame) {
           return res.sendStatus(400)
         }
 
-        const getPlayersResult = await client.query(getPlayersQuery, [gameId])
-
         getPlayersResult.rows.forEach(async (row) => {
-          if (sha256(row.token) === req.query.playerToken) {
+          if (sha256(row.token).toString() === req.query.playerToken) {
             await client.query(deletePlayerQuery, [row.token])
           }
 
