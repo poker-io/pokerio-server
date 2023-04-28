@@ -32,43 +32,43 @@ router.get(
     client
       .connect()
       .then(async () => {
+        // Define queries
         const getGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
         const verifyPlayerInGameQuery =
           'SELECT token FROM Players WHERE token=$1 AND game_id=$2'
         const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
         const deletePlayerQuery = 'DELETE FROM Players WHERE token=$1'
 
-        await client
-          .query(getGameQuery, [req.query.creatorToken])
-          .then(async (getGameRes) => {
-            if (getGameRes.rowCount === 0) {
-              return res.sendStatus(400)
-            }
-            await client
-              .query(verifyPlayerInGameQuery, [
-                req.query.playerToken,
-                getGameRes.rows[0].game_id,
-              ])
-              .then(async (verifyRes) => {
-                if (verifyRes.rowCount === 0) {
-                  return res.sendStatus(400)
-                }
+        // Check if game exists
+        const getGameResult = await client.query(getGameQuery, [
+          req.query.creatorToken,
+        ])
 
-                await client
-                  .query(getPlayersQuery, [getGameRes.rows[0].game_id])
-                  .then(async (players) => {
-                    players.rows.forEach(async (row) => {
-                      if (sha256(row.token) === req.query.playerToken) {
-                        await client.query(deletePlayerQuery, [row.token])
-                      }
+        if (getGameResult.rowCount === 0) {
+          return res.sendStatus(400)
+        }
+        const gameId = getGameResult.rows[0].game_id
 
-                      // TODO: Send message (after PR #35 is merged)
-                    })
+        const verifyPlayerInGameResult = await client.query(
+          verifyPlayerInGameQuery,
+          [req.query.playerToken, gameId]
+        )
 
-                    res.sendStatus(200)
-                  })
-              })
-          })
+        if (verifyPlayerInGameResult.rowCount === 0) {
+          return res.sendStatus(400)
+        }
+
+        const getPlayersResult = await client.query(getPlayersQuery, [gameId])
+
+        getPlayersResult.rows.forEach(async (row) => {
+          if (sha256(row.token) === req.query.playerToken) {
+            await client.query(deletePlayerQuery, [row.token])
+          }
+
+          // TODO: Send message (after PR #35 is merged)
+        })
+
+        res.sendStatus(200)
       })
       .catch(async (err) => {
         console.log(err.stack)
