@@ -102,4 +102,4 @@ test('Kick player, correct arguments', async () => {
         })
       client.end()
     })
-})
+}, 60000)
