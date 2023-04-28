@@ -2,6 +2,7 @@ import { getClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { verifyFCMToken } from '../utils/firebase'
+import sha256 from 'crypto-js/sha256'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -21,10 +22,7 @@ router.get(
   }),
   async (req, res) => {
     if (
-      !(
-        (await verifyFCMToken(req.query.creatorToken)) &&
-        (await verifyFCMToken(req.query.playerToken))
-      ) ||
+      !(await verifyFCMToken(req.query.creatorToken)) &&
       req.query.creatorToken === req.query.playerToken
     ) {
       return res.sendStatus(400)
@@ -37,11 +35,8 @@ router.get(
         const getGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
         const verifyPlayerInGameQuery =
           'SELECT token FROM Players WHERE token=$1 AND game_id=$2'
-        const removePlayerFromGameQuery = 'DELETE FROM Players WHERE token=$1'
-        const getNewSmallBlindCurrentPlayer =
-          'SELECT token FROM Players WHERE turn IN (SELECT MIN(turn) FROM Players WHERE token!=$1 ) AND game_id=$2 LIMIT 1'
-        const setNewSmallBlindCurrentPlayerQuery =
-          'UPDATE Games SET small_blind_who=$1, current_player=$2 WHERE game_id=$3'
+        const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
+        const deletePlayerQuery = 'DELETE FROM Players WHERE token=$1'
 
         await client
           .query(getGameQuery, [req.query.creatorToken])
@@ -60,19 +55,15 @@ router.get(
                 }
 
                 await client
-                  .query(getNewSmallBlindCurrentPlayer, [
-                    req.query.playerToken,
-                    getGameRes.rows[0].game_id,
-                  ])
-                  .then(async (playerToReplace) => {
-                    await client.query(setNewSmallBlindCurrentPlayerQuery, [
-                      playerToReplace.rows[0].token,
-                      playerToReplace.rows[0].token,
-                      getGameRes.rows[0].game_id,
-                    ])
-                    await client.query(removePlayerFromGameQuery, [
-                      req.query.playerToken,
-                    ])
+                  .query(getPlayersQuery, [getGameRes.rows[0].game_id])
+                  .then(async (players) => {
+                    players.rows.forEach(async (row) => {
+                      if (sha256(row.token) === req.query.playerToken) {
+                        await client.query(deletePlayerQuery, [row.token])
+                      }
+
+                      // TODO: Send message (after PR #35 is merged)
+                    })
 
                     res.sendStatus(200)
                   })
