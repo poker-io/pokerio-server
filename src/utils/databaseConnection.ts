@@ -3,7 +3,7 @@ import { user, password } from '../secrets'
 // pg is a CommonJS module, so we have to do it this way for the import to work
 export const { Client } = pg
 
-export function getClient(): any {
+export function getClient(): pg.Client {
   return new Client({
     user,
     password,
