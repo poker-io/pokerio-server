@@ -50,9 +50,9 @@ test('Leave game, correct arguments', async () => {
   const playersResult1 = await client.query(getPlayersQuery, [key])
   const gameMasterResult1 = await client.query(getGameMasterQuery, [key])
 
-  expect(gameMasterResult1.rowCount === 1)
-  expect(gameMasterResult1.rows[0].game_master === gameMasterToken)
-  expect(playersResult1.rowCount === 2)
+  expect(gameMasterResult1.rowCount).toEqual(1)
+  expect(gameMasterResult1.rows[0].game_master).toEqual(gameMasterToken)
+  expect(playersResult1.rowCount).toEqual(2)
 
   await request(app)
     .get(`/leaveGame?playerToken=${gameMasterToken}`)
@@ -61,18 +61,18 @@ test('Leave game, correct arguments', async () => {
   const playersResult2 = await client.query(getPlayersQuery, [key])
   const gameMasterResult2 = await client.query(getGameMasterQuery, [key])
 
-  expect(gameMasterResult2.rowCount === 1)
-  expect(gameMasterResult2.rows[0].game_master === player2Token)
-  expect(playersResult2.rowCount === 1)
-  expect(playersResult2.rows[0].token === player2Token)
+  expect(gameMasterResult2.rowCount).toEqual(1)
+  expect(gameMasterResult2.rows[0].game_master).toEqual(player2Token)
+  expect(playersResult2.rowCount).toEqual(1)
+  expect(playersResult2.rows[0].token).toEqual(player2Token)
 
   await request(app).get(`/leaveGame?playerToken=${player2Token}`).expect(200)
 
   const playersResult3 = await client.query(getPlayersQuery, [key])
   const gameResult = await client.query(getGameQuery, [key])
 
-  expect(playersResult3.rowCount === 0)
-  expect(gameResult.rowCount === 0)
+  expect(playersResult3.rowCount).toEqual(0)
+  expect(gameResult.rowCount).toEqual(0)
 
   await client.end()
 }, 20000)
