@@ -1,9 +1,8 @@
 import { getClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import sha256 from 'crypto-js/sha256'
-import { getMessaging } from 'firebase-admin/messaging'
 import { type gameSettings } from '../app'
-import { verifyFCMToken } from '../utils/firebase'
+import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
 
@@ -88,21 +87,9 @@ router.get(
                       nickname: row.nickname,
                       playerHash: sha256(row.token).toString(),
                     })
-                    if (
-                      row.token !== req.query.playerToken &&
-                      process.env.JEST_WORKER_ID === undefined
-                    ) {
-                      // Again, we don't want to send messages when testing.
-                      // Sending firebase message to all players except the one who just joined.
+                    if (row.token !== req.query.playerToken) {
                       message.token = row.token
-                      await getMessaging()
-                        .send(message)
-                        .then((response) => {
-                          console.log('Successfully sent message:', response)
-                        })
-                        .catch((error) => {
-                          console.log('Error sending message:', error)
-                        })
+                      await sendFirebaseMessage(message)
                     }
                   })
                 })
