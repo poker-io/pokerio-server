@@ -60,9 +60,9 @@ router.get(
           0,
           req.query.startingFunds ?? startingFundsDefault,
           req.query.smallBlind ?? smallBlindDefault,
-          req.query.creatorToken,
+          null,
           0,
-          req.query.creatorToken,
+          null,
         ]
 
         await client.query(createPlayerQuery, createPlayerValues)

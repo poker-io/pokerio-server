@@ -47,9 +47,9 @@ export async function databaseInit(): Promise<void> {
           game_round BIGINT DEFAULT 0 NOT NULL,
           starting_funds BIGINT NOT NULL,
           small_blind BIGINT NOT NULL,
-          small_blind_who VARCHAR(250) REFERENCES Players(token) NOT NULL,
+          small_blind_who VARCHAR(250) REFERENCES Players(token),
           current_table_value BIGINT,
-          current_player VARCHAR(250) REFERENCES Players(token) NOT NULL
+          current_player VARCHAR(250) REFERENCES Players(token)
         )`
     )
 

@@ -8,7 +8,7 @@ import express, { type Router } from 'express'
 const router: Router = express.Router()
 
 router.get(
-  '/kickPlayer',
+  '/leaveGame',
   rateLimiter,
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
@@ -53,7 +53,7 @@ router.get(
         let gameMaster = gameMasterResult.rows[0].game_master
         if (gameMaster === req.query.playerToken) {
           // If game master is last in game
-          if (playersResult.rows.length === 1) {
+          if (playersResult.rowCount === 1) {
             await client.query(deleteGameQuery, [gameId])
             await client.query(removePlayerQuery, [req.query.playerToken])
 
@@ -82,6 +82,10 @@ router.get(
           message.token = row.token
           await sendFirebaseMessage(message)
         })
+
+        // TODO: Fix game state
+
+        return res.sendStatus(200)
       })
       .catch(async (err) => {
         console.log(err.stack)
