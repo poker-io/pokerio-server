@@ -75,4 +75,4 @@ test('Leave game, correct arguments', async () => {
   expect(gameResult.rowCount === 0)
 
   await client.end()
-}, 60000)
+}, 20000)
