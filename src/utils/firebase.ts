@@ -14,8 +14,12 @@ admin.initializeApp({
   }),
 })
 
-export const verifyFCMToken = async (fcmToken) => {
-  if (process.env.JEST_WORKER_ID !== undefined) {
+function isTestingEnv() {
+  return process.env.JEST_WORKER_ID !== undefined
+}
+
+export async function verifyFCMToken(fcmToken) {
+  if (isTestingEnv()) {
     // We don't want to verify tokens when testing
     return true
   } else {
@@ -36,9 +40,8 @@ export const verifyFCMToken = async (fcmToken) => {
 }
 
 export async function sendFirebaseMessage(message: any) {
-  if (process.env.JEST_WORKER_ID === undefined) {
-    // We don't want to send messages when testing.
-    // Sending firebase message to all players except the one who just joined.
+  // We don't want to send messages when testing.
+  if (!isTestingEnv()) {
     await getMessaging()
       .send(message)
       .then((response) => {

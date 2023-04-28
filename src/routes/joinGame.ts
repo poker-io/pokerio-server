@@ -87,6 +87,8 @@ router.get(
                       nickname: row.nickname,
                       playerHash: sha256(row.token).toString(),
                     })
+                    // Sending firebase message to all players except the one
+                    // who just joined.
                     if (row.token !== req.query.playerToken) {
                       message.token = row.token
                       await sendFirebaseMessage(message)
