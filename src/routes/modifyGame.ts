@@ -1,7 +1,7 @@
 import { getClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
-import { verifyFCMToken } from '../utils/firebase'
+import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -33,6 +33,7 @@ router.post(
         const getGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
         const setNewSmallBlindStartingFunds =
           'UPDATE Games SET  small_blind=$1, starting_funds=$2 WHERE game_id=$3'
+        const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
 
         // Check if games exist
         const getGameResult = await client.query(getGameQuery, [
@@ -51,7 +52,22 @@ router.post(
           gameId,
         ])
 
-        // TODO: Send message (after PR #35 is merged)
+        // Notify players about the changes
+        const getPlayersResult = await client.query(getPlayersQuery, [gameId])
+
+        const message = {
+          data: {
+            type: 'settingsUpdated',
+            startingFunds: req.query.startingFunds,
+            smallBlind: req.query.smallBlind,
+          },
+          token: '',
+        }
+
+        getPlayersResult.rows.forEach(async (row) => {
+          message.token = row.token
+          await sendFirebaseMessage(message)
+        })
 
         return res.sendStatus(200)
       })
