@@ -22,8 +22,8 @@ router.get(
   }),
   async (req, res) => {
     if (
-      !(await verifyFCMToken(req.query.creatorToken)) &&
-      req.query.creatorToken === req.query.playerToken
+      req.query.creatorToken === req.query.playerToken ||
+      !(await verifyFCMToken(req.query.creatorToken))
     ) {
       return res.sendStatus(400)
     }
@@ -50,10 +50,12 @@ router.get(
         // Verify player is in game and kick
         const getPlayersResult = await client.query(getPlayersQuery, [gameId])
         let playerInGame = false
+        let kickedPlayerToken = ''
 
         getPlayersResult.rows.forEach((row) => {
           if (sha256(row.token).toString() === req.query.playerToken) {
             playerInGame = true
+            kickedPlayerToken = row.token
           }
         })
 
@@ -61,12 +63,11 @@ router.get(
           return res.sendStatus(400)
         }
 
+        await client.query(deletePlayerQuery, [kickedPlayerToken])
         getPlayersResult.rows.forEach(async (row) => {
-          if (sha256(row.token).toString() === req.query.playerToken) {
-            await client.query(deletePlayerQuery, [row.token])
+          if (sha256(row.token).toString() !== req.query.playerToken) {
+            // TODO: Send message (after PR #35 is merged)
           }
-
-          // TODO: Send message (after PR #35 is merged)
         })
 
         res.sendStatus(200)
