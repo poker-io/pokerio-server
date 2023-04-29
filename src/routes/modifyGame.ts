@@ -31,6 +31,8 @@ router.post(
       .then(async () => {
         // Define queries
         const getGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
+        const getCurrentPlayerQuery =
+          'SELECT current_player FROM Games WHERE game_id=$1 AND current_player IS NOT NULL'
         const setNewSmallBlindStartingFunds =
           'UPDATE Games SET  small_blind=$1, starting_funds=$2 WHERE game_id=$3'
         const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
@@ -44,6 +46,15 @@ router.post(
           return res.sendStatus(400)
         }
         const gameId = getGameResult.rows[0].game_id
+
+        // Check if the game has not started yet
+        const getCurrentPlayerResult = await client.query(
+          getCurrentPlayerQuery,
+          [gameId]
+        )
+        if (getCurrentPlayerResult.rowCount !== 0) {
+          return res.sendStatus(400)
+        }
 
         // Update settings
         await client.query(setNewSmallBlindStartingFunds, [
