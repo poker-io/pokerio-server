@@ -69,8 +69,8 @@ router.get(
         const message = {
           data: {
             type: 'settingsUpdated',
-            startingFunds: req.query.startingFunds,
-            smallBlind: req.query.smallBlind,
+            startingFunds: (req.query.startingFunds as string).toString(),
+            smallBlind: (req.query.smallBlind as string).toString(),
           },
           token: '',
         }

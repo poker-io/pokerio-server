@@ -69,7 +69,7 @@ router.get(
         const message = {
           data: {
             type: 'playerKicked',
-            playerHash: req.query.playerToken,
+            playerHash: req.query.playerToken as string,
           },
           token: '',
         }
