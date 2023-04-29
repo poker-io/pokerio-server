@@ -4,6 +4,7 @@ import { isCelebrateError } from 'celebrate'
 import joinGame from './routes/joinGame'
 import createGame from './routes/createGame'
 import modifyGame from './routes/modifyGame'
+import leaveGame from './routes/leaveGame'
 import { rateLimiter } from './utils/rateLimiter'
 
 export const app = express()
@@ -48,5 +49,7 @@ app.use(joinGame)
 app.use(createGame)
 
 app.use(modifyGame)
+
+app.use(leaveGame)
 
 app.use(errorHandling)

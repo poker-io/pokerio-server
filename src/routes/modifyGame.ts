@@ -25,7 +25,7 @@ router.post(
       return res.sendStatus(400)
     }
 
-    const client = await getClient()
+    const client = getClient()
     client
       .connect()
       .then(async () => {

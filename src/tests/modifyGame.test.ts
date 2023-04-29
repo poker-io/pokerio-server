@@ -44,7 +44,7 @@ test('Modify game, correct arguments', async () => {
   const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
   let gameId
 
-  const client = await getClient()
+  const client = getClient()
   await client.connect()
 
   await request(app)
