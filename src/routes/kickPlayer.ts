@@ -1,7 +1,7 @@
 import { getClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
-import { verifyFCMToken } from '../utils/firebase'
+import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import sha256 from 'crypto-js/sha256'
 
 import express, { type Router } from 'express'
@@ -64,10 +64,18 @@ router.get(
         }
 
         await client.query(deletePlayerQuery, [kickedPlayerToken])
+
+        // Notify players about the changes
+        const message = {
+          data: {
+            type: 'playerKicked',
+            playerHash: req.query.playerToken,
+          },
+          token: '',
+        }
         getPlayersResult.rows.forEach(async (row) => {
-          if (sha256(row.token).toString() !== req.query.playerToken) {
-            // TODO: Send message (after PR #35 is merged)
-          }
+          message.token = row.token
+          await sendFirebaseMessage(message)
         })
 
         res.sendStatus(200)
