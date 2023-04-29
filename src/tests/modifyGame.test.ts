@@ -10,20 +10,20 @@ test('Modify game, wrong args', async () => {
   await client
     .connect()
     .then(async () => {
-      await request(app).post('/modifyGame').expect(400)
-      await request(app).post('/modifyGame?creatorToken=2137').expect(400)
+      await request(app).get('/modifyGame').expect(400)
+      await request(app).get('/modifyGame?creatorToken=2137').expect(400)
 
       await client.query(insertGameCreator, [2137, '2137', 0])
 
-      await request(app).post('/modifyGame?creatorToken=2137').expect(400)
+      await request(app).get('/modifyGame?creatorToken=2137').expect(400)
       await request(app)
-        .post('/modifyGame?creatorToken=2137&smallBlind=asd')
+        .get('/modifyGame?creatorToken=2137&smallBlind=asd')
         .expect(400)
       await request(app)
-        .post('/modifyGame?creatorToken=2137&startingFunnds=dasdasd')
+        .get('/modifyGame?creatorToken=2137&startingFunnds=dasdasd')
         .expect(400)
       await request(app)
-        .post('/modifyGame?creatorToken=2137&startingFunds=1&smallBlind=220')
+        .get('/modifyGame?creatorToken=2137&startingFunds=1&smallBlind=220')
         .expect(400)
     })
     .finally(async () => {
@@ -57,7 +57,7 @@ test('Modify game, correct arguments', async () => {
     .expect(200)
 
   await request(app)
-    .post(
+    .get(
       '/modifyGame?creatorToken='
         .concat(gameMasterToken)
         .concat('&smallBlind=')

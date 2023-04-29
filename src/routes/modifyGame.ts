@@ -6,7 +6,7 @@ import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import express, { type Router } from 'express'
 const router: Router = express.Router()
 
-router.post(
+router.get(
   '/modifyGame',
   rateLimiter,
   celebrate({
