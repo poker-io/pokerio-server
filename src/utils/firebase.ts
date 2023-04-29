@@ -1,5 +1,5 @@
 import admin from 'firebase-admin'
-import { getMessaging } from 'firebase-admin/messaging'
+import { getMessaging, type Message } from 'firebase-admin/messaging'
 import { readFileSync } from 'fs'
 
 const serviceAccount = JSON.parse(
@@ -39,7 +39,7 @@ export async function verifyFCMToken(fcmToken) {
   }
 }
 
-export async function sendFirebaseMessage(message: any) {
+export async function sendFirebaseMessage(message: Message) {
   // We don't want to send messages when testing.
   if (!isTestingEnv()) {
     await getMessaging()

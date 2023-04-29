@@ -73,7 +73,7 @@ router.get(
           data: {
             type: 'playerLeft',
             playerHash: sha256(req.query.playerToken).toString(),
-            gameMaster: sha256(gameMaster),
+            gameMaster: sha256(gameMaster).toString(),
           },
           token: '',
         }
