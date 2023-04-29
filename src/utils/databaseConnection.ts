@@ -3,7 +3,7 @@ import { user, password } from '../secrets'
 // pg is a CommonJS module, so we have to do it this way for the import to work
 export const { Client } = pg
 
-export function getClient(): any {
+export function getClient(): pg.Client {
   return new Client({
     user,
     password,
@@ -47,9 +47,9 @@ export async function databaseInit(): Promise<void> {
           game_round BIGINT DEFAULT 0 NOT NULL,
           starting_funds BIGINT NOT NULL,
           small_blind BIGINT NOT NULL,
-          small_blind_who VARCHAR(250) REFERENCES Players(token) NOT NULL,
+          small_blind_who VARCHAR(250) REFERENCES Players(token),
           current_table_value BIGINT,
-          current_player VARCHAR(250) REFERENCES Players(token) NOT NULL
+          current_player VARCHAR(250) REFERENCES Players(token)
         )`
     )
 

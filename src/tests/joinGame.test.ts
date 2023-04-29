@@ -92,6 +92,6 @@ test('Join game, correct arguments', async () => {
         .catch((err) => {
           console.log(err.stack)
         })
-      client.end()
+      await client.end()
     })
 })
