@@ -85,4 +85,4 @@ test('Kick player, correct arguments', async () => {
         })
       await client.end()
     })
-}, 60000)
+}, 20000)
