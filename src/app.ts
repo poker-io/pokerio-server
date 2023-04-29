@@ -1,6 +1,7 @@
 import express from 'express'
 import { isCelebrateError } from 'celebrate'
 
+import kickPlayer from './routes/kickPlayer'
 import joinGame from './routes/joinGame'
 import createGame from './routes/createGame'
 import modifyGame from './routes/modifyGame'
@@ -49,6 +50,8 @@ app.use(joinGame)
 app.use(createGame)
 
 app.use(modifyGame)
+
+app.use(kickPlayer)
 
 app.use(leaveGame)
 
