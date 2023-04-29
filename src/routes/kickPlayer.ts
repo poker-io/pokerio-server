@@ -78,7 +78,9 @@ router.get(
           await sendFirebaseMessage(message)
         })
 
-        res.sendStatus(200)
+        // TODO: Fix game state
+
+        return res.sendStatus(200)
       })
       .catch(async (err) => {
         console.log(err.stack)
