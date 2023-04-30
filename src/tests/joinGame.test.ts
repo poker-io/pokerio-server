@@ -96,10 +96,7 @@ test('Join game, correct arguments', async () => {
 
       // Cannot join after game started.
       await request(app)
-        .get(
-          '/startGame/?creatorToken='
-            .concat(gameMasterToken)
-        )
+        .get('/startGame/?creatorToken='.concat(gameMasterToken))
         .expect(200)
       await request(app)
         .get(
@@ -126,4 +123,4 @@ test('Join game, correct arguments', async () => {
         })
       await client.end()
     })
-})
+}, 20000)

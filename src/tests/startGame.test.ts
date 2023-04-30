@@ -13,7 +13,8 @@ test('Start game, wrong args', async () => {
     .connect()
     .then(async () => {
       await request(app).get('/startGame').expect(400)
-      await request(app).get(`/startGame?creatorToken=${gameMasterToken}`)
+      await request(app)
+        .get(`/startGame?creatorToken=${gameMasterToken}`)
         .expect(400)
 
       await request(app)
@@ -26,7 +27,8 @@ test('Start game, wrong args', async () => {
         .expect(200)
 
       // Not enough players.
-      await request(app).get(`/startGame?creatorToken=${gameMasterToken}`)
+      await request(app)
+        .get(`/startGame?creatorToken=${gameMasterToken}`)
         .expect(400)
     })
     .finally(async () => {
@@ -45,8 +47,7 @@ test('Start game, correct arguments', async () => {
   const player1Nick = 'TESTSTARTNICK3'
   const findGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
   const deleteGameQuery = 'DELETE FROM Games WHERE game_id=$1'
-  const verifyGameHasStarted =
-    `SELECT card1, card2, card3, card4, card5, current_player, small_blind_who, 
+  const verifyGameHasStarted = `SELECT card1, card2, card3, card4, card5, current_player, small_blind_who, 
         current_table_value FROM Games WHERE game_id=$1`
   const verifyPlayersHaveCards =
     'SELECT card1, card2 FROM Players WHERE token=$1 OR token=$2 OR token=$3'
@@ -93,67 +94,87 @@ test('Start game, correct arguments', async () => {
         .expect(200)
 
       await request(app)
-        .get(
-          '/startGame/?creatorToken='
-            .concat(gameMasterToken)
-        )
+        .get('/startGame/?creatorToken='.concat(gameMasterToken))
         .expect(200)
 
-      await client
-        .query(verifyGameHasStarted, [
-          gameId
-        ])
-        .then(async (game) => {
-          // Check if game has started.
-          expect(game.rows[0].current_player).not.toBeNull()
-          expect(game.rows[0].small_blind_who).not.toBeNull()
-          expect(game.rows[0].small_blind_who)
-            .toEqual(game.rows[0].current_player)
-          expect(game.rows[0].current_table_value).not.toBeNull()
-          // Check cards.
-          expect(game.rows[0].card1).not.toBeNull()
-          expect(game.rows[0].card2).not.toBeNull()
-          expect(game.rows[0].card3).not.toBeNull()
-          expect(game.rows[0].card4).not.toBeNull()
-          expect(game.rows[0].card5).not.toBeNull()
-          // No duplicates.
-          expect(game.rows[0].card5).not.toEqual(game.rows[0].card4)
-          expect(game.rows[0].card5).not.toEqual(game.rows[0].card3)
-          expect(game.rows[0].card5).not.toEqual(game.rows[0].card2)
-          expect(game.rows[0].card5).not.toEqual(game.rows[0].card1)
-          expect(game.rows[0].card4).not.toEqual(game.rows[0].card3)
-          expect(game.rows[0].card4).not.toEqual(game.rows[0].card2)
-          expect(game.rows[0].card4).not.toEqual(game.rows[0].card1)
-          expect(game.rows[0].card3).not.toEqual(game.rows[0].card2)
-          expect(game.rows[0].card3).not.toEqual(game.rows[0].card1)
-          expect(game.rows[0].card2).not.toEqual(game.rows[0].card1)
-        })
+      await client.query(verifyGameHasStarted, [gameId]).then(async (game) => {
+        // Check if game has started.
+        expect(game.rows[0].current_player).not.toBeNull()
+        expect(game.rows[0].small_blind_who).not.toBeNull()
+        expect(game.rows[0].small_blind_who).toEqual(
+          game.rows[0].current_player
+        )
+        expect(game.rows[0].current_table_value).not.toBeNull()
+        // Check cards.
+        expect(game.rows[0].card1).not.toBeNull()
+        expect(game.rows[0].card2).not.toBeNull()
+        expect(game.rows[0].card3).not.toBeNull()
+        expect(game.rows[0].card4).not.toBeNull()
+        expect(game.rows[0].card5).not.toBeNull()
+        // No duplicates.
+        expect(game.rows[0].card5).not.toEqual(game.rows[0].card4)
+        expect(game.rows[0].card5).not.toEqual(game.rows[0].card3)
+        expect(game.rows[0].card5).not.toEqual(game.rows[0].card2)
+        expect(game.rows[0].card5).not.toEqual(game.rows[0].card1)
+        expect(game.rows[0].card4).not.toEqual(game.rows[0].card3)
+        expect(game.rows[0].card4).not.toEqual(game.rows[0].card2)
+        expect(game.rows[0].card4).not.toEqual(game.rows[0].card1)
+        expect(game.rows[0].card3).not.toEqual(game.rows[0].card2)
+        expect(game.rows[0].card3).not.toEqual(game.rows[0].card1)
+        expect(game.rows[0].card2).not.toEqual(game.rows[0].card1)
+      })
       await client
         .query(verifyPlayersHaveCards, [
           gameMasterToken,
           player1Token,
-          player2Token
-        ]).then(async (playersResult) => {
+          player2Token,
+        ])
+        .then(async (playersResult) => {
           expect(playersResult.rowCount).toEqual(3)
           for (let i = 0; i < playersResult.rowCount; i++) {
             expect(playersResult.rows[i].card1).not.toBeNull()
             expect(playersResult.rows[i].card2).not.toBeNull()
-            expect(playersResult.rows[i].card1)
-              .not.toEqual(playersResult.rows[i].card2)
+            expect(playersResult.rows[i].card1).not.toEqual(
+              playersResult.rows[i].card2
+            )
           }
           // No duplicates.
-          expect(playersResult.rows[0].card1).not.toEqual(playersResult.rows[1].card1)
-          expect(playersResult.rows[0].card1).not.toEqual(playersResult.rows[1].card2)
-          expect(playersResult.rows[0].card2).not.toEqual(playersResult.rows[1].card1)
-          expect(playersResult.rows[0].card2).not.toEqual(playersResult.rows[1].card2)
-          expect(playersResult.rows[0].card1).not.toEqual(playersResult.rows[2].card1)
-          expect(playersResult.rows[0].card1).not.toEqual(playersResult.rows[2].card2)
-          expect(playersResult.rows[0].card2).not.toEqual(playersResult.rows[2].card1)
-          expect(playersResult.rows[0].card2).not.toEqual(playersResult.rows[2].card2)
-          expect(playersResult.rows[1].card1).not.toEqual(playersResult.rows[2].card1)
-          expect(playersResult.rows[1].card1).not.toEqual(playersResult.rows[2].card2)
-          expect(playersResult.rows[1].card2).not.toEqual(playersResult.rows[2].card1)
-          expect(playersResult.rows[1].card2).not.toEqual(playersResult.rows[2].card2)
+          expect(playersResult.rows[0].card1).not.toEqual(
+            playersResult.rows[1].card1
+          )
+          expect(playersResult.rows[0].card1).not.toEqual(
+            playersResult.rows[1].card2
+          )
+          expect(playersResult.rows[0].card2).not.toEqual(
+            playersResult.rows[1].card1
+          )
+          expect(playersResult.rows[0].card2).not.toEqual(
+            playersResult.rows[1].card2
+          )
+          expect(playersResult.rows[0].card1).not.toEqual(
+            playersResult.rows[2].card1
+          )
+          expect(playersResult.rows[0].card1).not.toEqual(
+            playersResult.rows[2].card2
+          )
+          expect(playersResult.rows[0].card2).not.toEqual(
+            playersResult.rows[2].card1
+          )
+          expect(playersResult.rows[0].card2).not.toEqual(
+            playersResult.rows[2].card2
+          )
+          expect(playersResult.rows[1].card1).not.toEqual(
+            playersResult.rows[2].card1
+          )
+          expect(playersResult.rows[1].card1).not.toEqual(
+            playersResult.rows[2].card2
+          )
+          expect(playersResult.rows[1].card2).not.toEqual(
+            playersResult.rows[2].card1
+          )
+          expect(playersResult.rows[1].card2).not.toEqual(
+            playersResult.rows[2].card2
+          )
         })
     })
     .finally(async () => {
@@ -167,4 +188,4 @@ test('Start game, correct arguments', async () => {
         })
       await client.end()
     })
-})
+}, 20000)

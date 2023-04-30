@@ -14,7 +14,11 @@ router.get(
   rateLimiter,
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
-      creatorToken: Joi.string().required().min(1).max(250).label('creatorToken'),
+      creatorToken: Joi.string()
+        .required()
+        .min(1)
+        .max(250)
+        .label('creatorToken'),
     }),
   }),
   async (req, res) => {
@@ -31,13 +35,12 @@ router.get(
         AND current_player IS NULL`
         const getPlayersQuery =
           'SELECT nickname, token FROM Players WHERE game_id=$1'
-        const updateGameStateQuery =
-        `UPDATE Games SET current_player=$1, small_blind_who=$2, game_round=$3,
+        const updateGameStateQuery = `UPDATE Games SET current_player=$1, small_blind_who=$2, game_round=$3,
         current_table_value=$4,
         card1=$5, card2=$6, card3=$7, card4=$8, card5=$9 WHERE
         game_id=$10`
         const updatePlayerStateQuery =
-        'UPDATE Players SET turn=$1, card1=$2, card2=$3 WHERE token=$4'
+          'UPDATE Players SET turn=$1, card1=$2, card2=$3 WHERE token=$4'
 
         // Check if the player is a master of not started game
         const getGameIdResult = await client.query(getGameIdQuery, [
@@ -59,7 +62,7 @@ router.get(
           playersInGame.push({
             token: playersResult.rows[i].token,
             card1: '',
-            card2: ''
+            card2: '',
           })
         }
 
@@ -83,24 +86,22 @@ router.get(
           gameInfo.cards.push(cardDeck.pop())
         }
 
-        await client.query(updateGameStateQuery,
-          [
-            playersInGame[0].token,
-            playersInGame[0].token,
-            1,
-            0,
-            ...gameInfo.cards,
-            gameId
-          ])
+        await client.query(updateGameStateQuery, [
+          playersInGame[0].token,
+          playersInGame[0].token,
+          1,
+          0,
+          ...gameInfo.cards,
+          gameId,
+        ])
 
         for (let i = 0; i < playersCount; i++) {
-          await client.query(updatePlayerStateQuery,
-            [
-              gameInfo.players[i].turn,
-              playersInGame[i].card1,
-              playersInGame[i].card2,
-              playersInGame[i].token
-            ])
+          await client.query(updatePlayerStateQuery, [
+            gameInfo.players[i].turn,
+            playersInGame[i].card1,
+            playersInGame[i].card2,
+            playersInGame[i].token,
+          ])
         }
 
         const message = {
@@ -110,7 +111,7 @@ router.get(
             card1: '',
             card2: '',
           },
-          token: ''
+          token: '',
         }
 
         playersInGame.forEach(async (player) => {

@@ -28,12 +28,12 @@ router.get(
     client
       .connect()
       .then(async () => {
-        const checkIfGameExistsQuery =
-          `SELECT game_master FROM Games g 
+        const checkIfGameExistsQuery = `SELECT game_master FROM Games g 
             join Players p on g.game_id = p.game_id 
             WHERE g.game_id = $1 and g.game_round = 0
             group by g.game_id having count(p.token) < 8`
-        const checkIfPlayerNotInGameQuery = 'SELECT * FROM Players WHERE token=$1'
+        const checkIfPlayerNotInGameQuery =
+          'SELECT * FROM Players WHERE token=$1'
         const gameCheckValues = [req.query.gameId]
         const createPlayerQuery =
           'INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) VALUES($1, $2, $3, $4, $5, $6, $7, $8)'
@@ -53,8 +53,10 @@ router.get(
           'SELECT nickname, token FROM Players WHERE game_id=$1'
         const getPlayersInRoomValues = [req.query.gameId]
 
-        const playerNotInGameResult =
-          await client.query(checkIfPlayerNotInGameQuery, [req.query.playerToken])
+        const playerNotInGameResult = await client.query(
+          checkIfPlayerNotInGameQuery,
+          [req.query.playerToken]
+        )
         if (playerNotInGameResult.rowCount !== 0) {
           return res.sendStatus(400)
         }
