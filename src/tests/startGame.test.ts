@@ -45,15 +45,17 @@ test('Start game, correct arguments', async () => {
   const player2Token = 'TESTSTART4'
   const player2Nick = 'TESTSTARTNICK4'
   const player1Nick = 'TESTSTARTNICK3'
-  const findGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
+  const findGameQuery =
+    'SELECT game_id, starting_funds FROM Games WHERE game_master=$1'
   const deleteGameQuery = 'DELETE FROM Games WHERE game_id=$1'
   const verifyGameHasStarted = `SELECT card1, card2, card3, card4, card5, current_player, small_blind_who, 
         current_table_value FROM Games WHERE game_id=$1`
-  const verifyPlayersHaveCards =
-    'SELECT card1, card2 FROM Players WHERE token=$1 OR token=$2 OR token=$3'
+  const verifyPlayersHaveCardsAndFunds =
+    'SELECT card1, card2, funds FROM Players WHERE token=$1 OR token=$2 OR token=$3'
   const deletePlayerQuery =
     'DELETE FROM Players WHERE token = $1 OR token = $2 OR token = $3'
   let gameId
+  let funds
 
   const client = getClient()
   await client.connect()
@@ -71,7 +73,7 @@ test('Start game, correct arguments', async () => {
     .query(findGameQuery, [gameMasterToken])
     .then(async (result) => {
       gameId = result.rows[0].game_id.toString()
-
+      funds = result.rows[0].starting_funds
       await request(app)
         .get(
           '/joinGame/?playerToken='
@@ -124,7 +126,7 @@ test('Start game, correct arguments', async () => {
         expect(game.rows[0].card2).not.toEqual(game.rows[0].card1)
       })
       await client
-        .query(verifyPlayersHaveCards, [
+        .query(verifyPlayersHaveCardsAndFunds, [
           gameMasterToken,
           player1Token,
           player2Token,
@@ -137,6 +139,7 @@ test('Start game, correct arguments', async () => {
             expect(playersResult.rows[i].card1).not.toEqual(
               playersResult.rows[i].card2
             )
+            expect(playersResult.rows[i].funds).toEqual(funds)
           }
           // No duplicates.
           expect(playersResult.rows[0].card1).not.toEqual(

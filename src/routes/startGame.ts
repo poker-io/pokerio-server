@@ -31,8 +31,8 @@ router.get(
       .connect()
       .then(async () => {
         // Define queries
-        const getGameIdQuery = `SELECT game_id FROM Games WHERE game_master=$1
-        AND current_player IS NULL`
+        const getGameIdQuery = `SELECT game_id, starting_funds 
+        FROM Games WHERE game_master=$1 AND current_player IS NULL`
         const getPlayersQuery =
           'SELECT nickname, token FROM Players WHERE game_id=$1'
         const updateGameStateQuery = `UPDATE Games SET current_player=$1, small_blind_who=$2, game_round=$3,
@@ -40,7 +40,7 @@ router.get(
         card1=$5, card2=$6, card3=$7, card4=$8, card5=$9 WHERE
         game_id=$10`
         const updatePlayerStateQuery =
-          'UPDATE Players SET turn=$1, card1=$2, card2=$3 WHERE token=$4'
+          'UPDATE Players SET turn=$1, card1=$2, card2=$3, funds=$4 WHERE token=$5'
 
         // Check if the player is a master of not started game
         const getGameIdResult = await client.query(getGameIdQuery, [
@@ -50,6 +50,7 @@ router.get(
           return res.sendStatus(400)
         }
         const gameId = getGameIdResult.rows[0].game_id
+        const startingFunds = getGameIdResult.rows[0].starting_funds
 
         const playersResult = await client.query(getPlayersQuery, [gameId])
         const playersCount = playersResult.rowCount
@@ -100,6 +101,7 @@ router.get(
             gameInfo.players[i].turn,
             playersInGame[i].card1,
             playersInGame[i].card2,
+            startingFunds,
             playersInGame[i].token,
           ])
         }
