@@ -1,7 +1,7 @@
 import { getClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import sha256 from 'crypto-js/sha256'
-import { type gameSettings } from '../app'
+import { type GameSettings } from '../app'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
@@ -28,8 +28,12 @@ router.get(
     client
       .connect()
       .then(async () => {
-        const checkIfGameExistsQuery =
-          'SELECT game_master FROM Games g join Players p on g.game_id = p.game_id WHERE g.game_id = $1 group by g.game_id having count(p.token) < 8'
+        const checkIfGameExistsQuery = `SELECT game_master FROM Games g 
+            join Players p on g.game_id = p.game_id 
+            WHERE g.game_id = $1 and g.game_round = 0
+            group by g.game_id having count(p.token) < 8`
+        const checkIfPlayerNotInGameQuery =
+          'SELECT * FROM Players WHERE token=$1'
         const gameCheckValues = [req.query.gameId]
         const createPlayerQuery =
           'INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) VALUES($1, $2, $3, $4, $5, $6, $7, $8)'
@@ -48,13 +52,22 @@ router.get(
         const getPlayersInRoomQuery =
           'SELECT nickname, token FROM Players WHERE game_id=$1'
         const getPlayersInRoomValues = [req.query.gameId]
+
+        const playerNotInGameResult = await client.query(
+          checkIfPlayerNotInGameQuery,
+          [req.query.playerToken]
+        )
+        if (playerNotInGameResult.rowCount !== 0) {
+          return res.sendStatus(400)
+        }
+
         await client
           .query(checkIfGameExistsQuery, gameCheckValues)
           .then(async (result) => {
             if (result.rowCount === 0) {
               return res.sendStatus(401)
             } else {
-              const gameInfo: gameSettings = {
+              const gameInfo: GameSettings = {
                 smallBlind: 0,
                 startingFunds: 0,
                 players: [],
