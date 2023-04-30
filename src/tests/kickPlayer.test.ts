@@ -2,7 +2,7 @@ import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
 import sha256 from 'crypto-js/sha256'
-import { type newGameInfo } from '../app'
+import { type NewGameInfo } from '../app'
 
 test('Kick player, wrong args', (done) => {
   request(app).get('/kickPlayer').expect(400).end(done)
@@ -29,7 +29,7 @@ test('Kick player, correct arguments', async () => {
         .concat(gameMasterNick)
     )
     .expect(200)
-  const gameId = (res.body as newGameInfo).gameKey
+  const gameId = (res.body as NewGameInfo).gameKey
 
   // Creator exists, but the player does not
   await request(app)

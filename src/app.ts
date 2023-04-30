@@ -6,6 +6,7 @@ import joinGame from './routes/joinGame'
 import createGame from './routes/createGame'
 import modifyGame from './routes/modifyGame'
 import leaveGame from './routes/leaveGame'
+import startGame from './routes/startGame'
 import { rateLimiter } from './utils/rateLimiter'
 
 export const app = express()
@@ -13,21 +14,36 @@ export const port = 42069
 
 export const startingFundsDefault = 1000
 export const smallBlindDefault = 100
-export interface playerInfo {
+export interface PlayerInfo {
   nickname: string
   playerHash: string
 }
-export interface gameSettings {
+export interface InternalPlayerInfo {
+  token: string
+  card1: string
+  card2: string
+}
+
+export interface PlayerGameInfo {
+  playerHash: string
+  turn: number
+}
+export interface GameSettings {
   smallBlind: number
   startingFunds: number
-  players: playerInfo[]
+  players: PlayerInfo[]
   gameMasterHash: string
 }
 
-export interface newGameInfo {
+export interface NewGameInfo {
   gameKey: number
   startingFunds: number
   smallBlind: number
+}
+
+export interface StartingGameInfo {
+  players: PlayerGameInfo[]
+  cards: string[]
 }
 
 const errorHandling = (error, req, res, next) => {
@@ -54,5 +70,7 @@ app.use(modifyGame)
 app.use(kickPlayer)
 
 app.use(leaveGame)
+
+app.use(startGame)
 
 app.use(errorHandling)

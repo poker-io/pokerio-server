@@ -1,33 +1,33 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
-import type { gameSettings } from '../app'
+import type { GameSettings } from '../app'
 import sha256 from 'crypto-js/sha256'
 
 test('Join game, wrong args', (doneJoin) => {
   request(app)
     .get('/joinGame/?playerToken=-1&nickname=yellow&gameID=TESTJOIN')
     .expect(400)
-    .end(doneJoin) // bad token
-  request(app).get('/joinGame').expect(400).end(doneJoin) // no args
+    .end(doneJoin) // Bad token.
+  request(app).get('/joinGame').expect(400).end(doneJoin) // No args.
   request(app)
     .get('/joinGame/?playerToken=TESTJOIN1&nickname=11&gameId=TESTJOIN')
     .expect(400)
-    .end(doneJoin) // bad nickname
+    .end(doneJoin) // Bad nickname.
   request(app)
     .get(
       '/joinGame/?playerToken=TESTJOIN1&nickname=LongerThanTwentyString&gameId=TESTJOIN'
     )
     .expect(400)
-    .end(doneJoin) // nickname too long
+    .end(doneJoin) // Nickname too long.
   request(app)
     .get('/joinGame/?playerToken=TESTJOIN1&nickname=yellow&gameId=TESTJOIN')
     .expect(400)
-    .end(doneJoin) // bad game id format
+    .end(doneJoin) // Bad game id format.
   request(app)
     .get('/joinGame/?playerToken=TESTJOIN1&nickname=yellow&gameId=11')
     .expect(401)
-    .end(doneJoin) // game does not exist
+    .end(doneJoin) // Game does not exist.
 })
 
 test('Join game, correct arguments', async () => {
@@ -35,6 +35,8 @@ test('Join game, correct arguments', async () => {
   const playerToken = 'TESTJOIN2'
   const gameMasterNick = 'NICKJOIN'
   const playerNick = 'NICKJOIN2'
+  const playerToken2 = 'TESTJOIN3'
+  const playerNick2 = 'NICKJOIN3'
   const client = getClient()
   await client.connect()
 
@@ -48,7 +50,7 @@ test('Join game, correct arguments', async () => {
     )
     .expect(200)
 
-  const expectedInfo: gameSettings = {
+  const expectedInfo: GameSettings = {
     smallBlind: 60,
     startingFunds: 2137,
     players: [
@@ -79,6 +81,33 @@ test('Join game, correct arguments', async () => {
             .concat(gameId)
         )
         .expect(expectedInfo)
+
+      // Cannot join twice.
+      await request(app)
+        .get(
+          '/joinGame/?playerToken='
+            .concat(playerToken)
+            .concat('&nickname=')
+            .concat(playerNick)
+            .concat('&gameId=')
+            .concat(gameId)
+        )
+        .expect(400)
+
+      // Cannot join after game started.
+      await request(app)
+        .get('/startGame/?creatorToken='.concat(gameMasterToken))
+        .expect(200)
+      await request(app)
+        .get(
+          '/joinGame/?playerToken='
+            .concat(playerToken2)
+            .concat('&nickname=')
+            .concat(playerNick2)
+            .concat('&gameId=')
+            .concat(gameId)
+        )
+        .expect(401)
     })
     .finally(async () => {
       const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
@@ -86,12 +115,12 @@ test('Join game, correct arguments', async () => {
         console.log(err.stack)
       })
       const deletePlayerQuery =
-        'DELETE FROM Players WHERE token = $1 or token = $2'
+        'DELETE FROM Players WHERE token = $1 or token = $2 or token = $3'
       await client
-        .query(deletePlayerQuery, [playerToken, gameMasterToken])
+        .query(deletePlayerQuery, [playerToken, gameMasterToken, playerToken2])
         .catch((err) => {
           console.log(err.stack)
         })
       await client.end()
     })
-})
+}, 20000)

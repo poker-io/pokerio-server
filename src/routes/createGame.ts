@@ -3,7 +3,7 @@ import { celebrate, Joi, Segments } from 'celebrate'
 import {
   startingFundsDefault,
   smallBlindDefault,
-  type newGameInfo,
+  type NewGameInfo,
 } from '../app'
 import { verifyFCMToken } from '../utils/firebase'
 
@@ -73,7 +73,7 @@ router.get(
               req.query.creatorToken,
             ])
             .then(() => {
-              const newGame: newGameInfo = {
+              const newGame: NewGameInfo = {
                 gameKey: result.rows[0].insert_with_random_key,
                 startingFunds: startingFundsDefault,
                 smallBlind: smallBlindDefault,
