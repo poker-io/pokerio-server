@@ -58,10 +58,6 @@ test('Join game, correct arguments', async () => {
         nickname: gameMasterNick,
         playerHash: sha256(gameMasterToken).toString(),
       },
-      {
-        nickname: playerNick,
-        playerHash: sha256(playerToken).toString(),
-      },
     ],
     gameMasterHash: sha256(gameMasterToken).toString(),
   }

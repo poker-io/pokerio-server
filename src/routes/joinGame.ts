@@ -73,7 +73,6 @@ router.get(
                 players: [],
                 gameMasterHash: sha256(result.rows[0].game_master).toString(),
               }
-              await client.query(createPlayerQuery, createPlayerValues)
               await client
                 .query(getGameInfoQuery, getGameInfoValues)
                 .then((result) => {
@@ -108,6 +107,7 @@ router.get(
                     }
                   })
                 })
+              await client.query(createPlayerQuery, createPlayerValues)
               res.send(gameInfo)
             }
           })
