@@ -1,13 +1,12 @@
 import { getClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
-import { verifyFCMToken } from '../utils/firebase'
-import { type PlayerDuringGame, type PlayerInfo } from '../app'
-import { shuffleArray } from '../utils/randomise'
+import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
+import { type StartingGameInfo, type InternalPlayerInfo } from '../app'
+import { shuffleArray, fullCardDeck } from '../utils/randomise'
 import sha256 from 'crypto-js/sha256'
 
 import express, { type Router } from 'express'
-// import { refreshToken } from 'firebase-admin/app'
 const router: Router = express.Router()
 
 router.get(
@@ -28,15 +27,18 @@ router.get(
       .connect()
       .then(async () => {
         // Define queries
-        const getGameIdQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
+        const getGameIdQuery = `SELECT game_id FROM Games WHERE game_master=$1
+        AND current_player IS NULL`
         const getPlayersQuery =
           'SELECT nickname, token FROM Players WHERE game_id=$1'
-        // const updateGameStateQuery =
-        // 'UPDATE Games SET current_player=$1 small_blind_who=$2 WHERE game_id=$2'
-        // const updatePlayerStateQuery =
-        // 'UPDATE Players SET turn=$1 WHERE token=$2'
+        const updateGameStateQuery =
+        `UPDATE Games SET current_player=$1 small_blind_who=$2 game_round=$3
+        card1=$4 card2=$5 card3=$6 card4=$7 card5=$8 card6=$9 card7=$10 WHERE
+        game_id=$11`
+        const updatePlayerStateQuery =
+        'UPDATE Players SET turn=$1 card1=$2 card2=$3 WHERE token=$4'
 
-        // Check if the player is a master of any game
+        // Check if the player is a master of not started game
         const getGameIdResult = await client.query(getGameIdQuery, [
           req.query.creatorToken,
         ])
@@ -50,29 +52,74 @@ router.get(
         if (playersCount < 2) {
           return res.sendStatus(400)
         }
-        let playersInGame: PlayerInfo[] = []
-        const onePlayerInfo: PlayerInfo = {
-          nickname: '',
-          playerHash: ''
-        }
-        const onePlayerDuringGame: PlayerDuringGame = {
-          info: onePlayerInfo,
-          turn: 0,
-          card1: '',
-          card2: ''
-        }
-        // const cardDeck = fullCardDeck.slice()
 
+        const playersInGame: InternalPlayerInfo[] = []
         for (let i = 0; i < playersCount; i++) {
-          onePlayerInfo.nickname = playersResult.rows[i].nickname
-          onePlayerInfo.playerHash = sha256(playersResult.rows[i].token).toString()
-          playersInGame.push(onePlayerInfo)
+          playersInGame.push({
+            playerHash: sha256(playersResult.rows[i].token).toString(),
+            token: playersResult.rows[i].token,
+            card1: '',
+            card2: ''
+          })
         }
-        playersInGame = shuffleArray(playersInGame)
+
+        shuffleArray(playersInGame)
+        const cardDeck = shuffleArray(fullCardDeck.slice())
+        console.log(cardDeck)
+
+        const gameInfo: StartingGameInfo = {
+          players: [],
+          cards: [],
+        }
         for (let i = 0; i < playersCount; i++) {
-          onePlayerDuringGame.info = playersInGame[i]
-          onePlayerDuringGame.turn = i + 1
+          gameInfo.players.push({
+            playerHash: playersInGame[i].playerHash,
+            turn: i + 1,
+          })
+          playersInGame[i].card1 = cardDeck.pop()
+          playersInGame[i].card2 = cardDeck.pop()
         }
+
+        for (let i = 0; i < 5; i++) {
+          gameInfo.cards.push(cardDeck.pop())
+        }
+        console.log(gameInfo.cards)
+
+        await client.query(updateGameStateQuery,
+          [
+            playersInGame[0].token,
+            playersInGame[0].token,
+            1,
+            ...gameInfo.cards,
+            gameId
+          ])
+        for (let i = 0; i < playersCount; i++) {
+          await client.query(updatePlayerStateQuery,
+            [
+              gameInfo.players[i].turn,
+              playersInGame[i].card1,
+              playersInGame[i].card2,
+              playersInGame[i].token
+            ])
+        }
+        const message = {
+          data: {
+            type: 'startGame',
+            startedGameInfo: JSON.stringify(gameInfo),
+            card1: '',
+            card2: '',
+          },
+          token: ''
+        }
+
+        playersInGame.forEach(async (player) => {
+          message.token = player.token
+          message.data.card1 = player.card1
+          message.data.card2 = player.card2
+          await sendFirebaseMessage(message)
+        })
+
+        res.sendStatus(200)
       })
       .finally(async () => {
         await client.end()

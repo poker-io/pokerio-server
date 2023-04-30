@@ -6,6 +6,7 @@ import joinGame from './routes/joinGame'
 import createGame from './routes/createGame'
 import modifyGame from './routes/modifyGame'
 import leaveGame from './routes/leaveGame'
+import startGame from './routes/startGame'
 import { rateLimiter } from './utils/rateLimiter'
 
 export const app = express()
@@ -17,12 +18,16 @@ export interface PlayerInfo {
   nickname: string
   playerHash: string
 }
-
-export interface PlayerDuringGame {
-  info: PlayerInfo
-  turn: number
+export interface InternalPlayerInfo {
+  playerHash: string
+  token: string
   card1: string
   card2: string
+}
+
+export interface PlayerGameInfo {
+  playerHash: string
+  turn: number
 }
 export interface GameSettings {
   smallBlind: number
@@ -38,8 +43,8 @@ export interface NewGameInfo {
 }
 
 export interface StartingGameInfo {
-  players: PlayerDuringGame[]
-  cards: number[]
+  players: PlayerGameInfo[]
+  cards: string[]
 }
 
 const errorHandling = (error, req, res, next) => {
@@ -66,5 +71,7 @@ app.use(modifyGame)
 app.use(kickPlayer)
 
 app.use(leaveGame)
+
+app.use(startGame)
 
 app.use(errorHandling)
