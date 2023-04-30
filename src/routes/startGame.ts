@@ -32,11 +32,12 @@ router.get(
         const getPlayersQuery =
           'SELECT nickname, token FROM Players WHERE game_id=$1'
         const updateGameStateQuery =
-        `UPDATE Games SET current_player=$1 small_blind_who=$2 game_round=$3
-        card1=$4 card2=$5 card3=$6 card4=$7 card5=$8 card6=$9 card7=$10 WHERE
-        game_id=$11`
+        `UPDATE Games SET current_player=$1, small_blind_who=$2, game_round=$3,
+        current_table_value=$4,
+        card1=$5, card2=$6, card3=$7, card4=$8, card5=$9 WHERE
+        game_id=$10`
         const updatePlayerStateQuery =
-        'UPDATE Players SET turn=$1 card1=$2 card2=$3 WHERE token=$4'
+        'UPDATE Players SET turn=$1, card1=$2, card2=$3 WHERE token=$4'
 
         // Check if the player is a master of not started game
         const getGameIdResult = await client.query(getGameIdQuery, [
@@ -65,7 +66,6 @@ router.get(
 
         shuffleArray(playersInGame)
         const cardDeck = shuffleArray(fullCardDeck.slice())
-        console.log(cardDeck)
 
         const gameInfo: StartingGameInfo = {
           players: [],
@@ -83,16 +83,17 @@ router.get(
         for (let i = 0; i < 5; i++) {
           gameInfo.cards.push(cardDeck.pop())
         }
-        console.log(gameInfo.cards)
 
         await client.query(updateGameStateQuery,
           [
             playersInGame[0].token,
             playersInGame[0].token,
             1,
+            0,
             ...gameInfo.cards,
             gameId
           ])
+
         for (let i = 0; i < playersCount; i++) {
           await client.query(updatePlayerStateQuery,
             [
@@ -102,6 +103,7 @@ router.get(
               playersInGame[i].token
             ])
         }
+
         const message = {
           data: {
             type: 'startGame',
