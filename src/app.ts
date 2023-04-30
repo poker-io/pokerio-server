@@ -13,18 +13,18 @@ export const port = 42069
 
 export const startingFundsDefault = 1000
 export const smallBlindDefault = 100
-export interface playerInfo {
+export interface PlayerInfo {
   nickname: string
   playerHash: string
 }
-export interface gameSettings {
+export interface GameSettings {
   smallBlind: number
   startingFunds: number
-  players: playerInfo[]
+  players: PlayerInfo[]
   gameMasterHash: string
 }
 
-export interface newGameInfo {
+export interface NewGameInfo {
   gameKey: number
   startingFunds: number
   smallBlind: number

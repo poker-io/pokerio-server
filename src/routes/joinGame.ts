@@ -1,7 +1,7 @@
 import { getClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import sha256 from 'crypto-js/sha256'
-import { type gameSettings } from '../app'
+import { type GameSettings } from '../app'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
@@ -54,7 +54,7 @@ router.get(
             if (result.rowCount === 0) {
               return res.sendStatus(401)
             } else {
-              const gameInfo: gameSettings = {
+              const gameInfo: GameSettings = {
                 smallBlind: 0,
                 startingFunds: 0,
                 players: [],

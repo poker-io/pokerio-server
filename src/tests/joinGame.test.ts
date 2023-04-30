@@ -1,7 +1,7 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
-import type { gameSettings } from '../app'
+import type { GameSettings } from '../app'
 import sha256 from 'crypto-js/sha256'
 
 test('Join game, wrong args', (doneJoin) => {
@@ -48,7 +48,7 @@ test('Join game, correct arguments', async () => {
     )
     .expect(200)
 
-  const expectedInfo: gameSettings = {
+  const expectedInfo: GameSettings = {
     smallBlind: 60,
     startingFunds: 2137,
     players: [
