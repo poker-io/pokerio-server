@@ -17,6 +17,13 @@ export interface PlayerInfo {
   nickname: string
   playerHash: string
 }
+
+export interface PlayerDuringGame {
+  info: PlayerInfo
+  turn: number
+  card1: string
+  card2: string
+}
 export interface GameSettings {
   smallBlind: number
   startingFunds: number
@@ -28,6 +35,11 @@ export interface NewGameInfo {
   gameKey: number
   startingFunds: number
   smallBlind: number
+}
+
+export interface StartingGameInfo {
+  players: PlayerDuringGame[]
+  cards: number[]
 }
 
 const errorHandling = (error, req, res, next) => {
