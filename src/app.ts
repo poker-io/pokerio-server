@@ -19,7 +19,6 @@ export interface PlayerInfo {
   playerHash: string
 }
 export interface InternalPlayerInfo {
-  playerHash: string
   token: string
   card1: string
   card2: string

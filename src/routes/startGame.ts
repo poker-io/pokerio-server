@@ -57,7 +57,6 @@ router.get(
         const playersInGame: InternalPlayerInfo[] = []
         for (let i = 0; i < playersCount; i++) {
           playersInGame.push({
-            playerHash: sha256(playersResult.rows[i].token).toString(),
             token: playersResult.rows[i].token,
             card1: '',
             card2: ''
@@ -73,7 +72,7 @@ router.get(
         }
         for (let i = 0; i < playersCount; i++) {
           gameInfo.players.push({
-            playerHash: playersInGame[i].playerHash,
+            playerHash: sha256(playersInGame[i].token).toString(),
             turn: i + 1,
           })
           playersInGame[i].card1 = cardDeck.pop()
