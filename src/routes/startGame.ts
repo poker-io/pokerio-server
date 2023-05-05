@@ -42,7 +42,7 @@ router.get(
         const updatePlayerStateQuery =
           'UPDATE Players SET turn=$1, card1=$2, card2=$3, funds=$4 WHERE token=$5'
 
-        // Check if the player is a master of not started game
+        // Check if the player is a master of a non-started game
         const getGameIdResult = await client.query(getGameIdQuery, [
           req.query.creatorToken,
         ])
@@ -52,6 +52,7 @@ router.get(
         const gameId = getGameIdResult.rows[0].game_id
         const startingFunds = getGameIdResult.rows[0].starting_funds
 
+        // Get players
         const playersResult = await client.query(getPlayersQuery, [gameId])
         const playersCount = playersResult.rowCount
         if (playersCount < 2) {
@@ -67,6 +68,7 @@ router.get(
           })
         }
 
+        // Deal out cards
         shuffleArray(playersInGame)
         const cardDeck = shuffleArray(fullCardDeck.slice())
 
@@ -106,6 +108,7 @@ router.get(
           ])
         }
 
+        // Notify players about the game state
         const message = {
           data: {
             type: 'startGame',
