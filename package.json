@@ -56,7 +56,9 @@
     "preset": "ts-jest"
   },
   "lint-staged": {
-    "*.(js|ts|tsx)": "yarn lint",
-    "src/*": "prettier --write"
+    "*.(js|ts|tsx)": [
+      "yarn pretty",
+      "yarn lint"
+    ]
   }
 }
