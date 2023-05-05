@@ -35,6 +35,7 @@ router.get(
     client
       .connect()
       .then(async () => {
+        // Define queries
         const createPlayerQuery =
           'INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) VALUES($1, $2, $3, $4, $5, $6, $7, $8)'
         const createPlayerValues = [
@@ -47,7 +48,6 @@ router.get(
           null,
           null,
         ]
-
         const createGameQuery =
           'SELECT * FROM insert_with_random_key($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) '
         const values = [
@@ -65,6 +65,7 @@ router.get(
           null,
         ]
 
+        // Create game
         await client.query(createPlayerQuery, createPlayerValues)
         await client.query(createGameQuery, values).then(async (result) => {
           await client
