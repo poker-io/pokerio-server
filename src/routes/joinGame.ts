@@ -90,8 +90,10 @@ router.get(
           })
 
         // Notify players about new player
-        const playersInRoomResult = await client
-          .query(getPlayersInRoomQuery, getPlayersInRoomValues)
+        const playersInRoomResult = await client.query(
+          getPlayersInRoomQuery,
+          getPlayersInRoomValues
+        )
 
         const message = {
           data: {
