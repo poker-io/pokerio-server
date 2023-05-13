@@ -28,6 +28,7 @@ router.get(
     client
       .connect()
       .then(async () => {
+        // Define queries
         const checkIfGameExistsQuery = `SELECT game_master FROM Games g 
             join Players p on g.game_id = p.game_id 
             WHERE g.game_id = $1 and g.game_round = 0
@@ -53,6 +54,7 @@ router.get(
           'SELECT nickname, token FROM Players WHERE game_id=$1'
         const getPlayersInRoomValues = [req.query.gameId]
 
+        // Check if player isn't already in the game
         const playerNotInGameResult = await client.query(
           checkIfPlayerNotInGameQuery,
           [req.query.playerToken]
@@ -61,56 +63,58 @@ router.get(
           return res.sendStatus(400)
         }
 
+        // Check if game exists
+        const checkIfGameExistResult = await client.query(
+          checkIfGameExistsQuery,
+          gameCheckValues
+        )
+
+        if (checkIfGameExistResult.rowCount === 0) {
+          return res.sendStatus(401)
+        }
+
+        // Prepare info for new player
+        const gameInfo: GameSettings = {
+          smallBlind: 0,
+          startingFunds: 0,
+          players: [],
+          gameMasterHash: sha256(
+            checkIfGameExistResult.rows[0].game_master
+          ).toString(),
+        }
         await client
-          .query(checkIfGameExistsQuery, gameCheckValues)
-          .then(async (result) => {
-            if (result.rowCount === 0) {
-              return res.sendStatus(401)
-            } else {
-              const gameInfo: GameSettings = {
-                smallBlind: 0,
-                startingFunds: 0,
-                players: [],
-                gameMasterHash: sha256(result.rows[0].game_master).toString(),
-              }
-              await client
-                .query(getGameInfoQuery, getGameInfoValues)
-                .then((result) => {
-                  gameInfo.smallBlind = parseInt(result.rows[0].small_blind)
-                  gameInfo.startingFunds = parseInt(
-                    result.rows[0].starting_funds
-                  )
-                })
-              await client
-                .query(getPlayersInRoomQuery, getPlayersInRoomValues)
-                .then((result) => {
-                  const message = {
-                    data: {
-                      type: 'playerJoined',
-                      // We know that the nickname will be defined
-                      // because we checked it with celebrate.
-                      nickname: req.query.nickname as string,
-                      playerHash: sha256(req.query.playerToken).toString(),
-                    },
-                    token: '',
-                  }
-                  result.rows.forEach(async (row) => {
-                    gameInfo.players.push({
-                      nickname: row.nickname,
-                      playerHash: sha256(row.token).toString(),
-                    })
-                    // Sending firebase message to all players except the one
-                    // who just joined.
-                    if (row.token !== req.query.playerToken) {
-                      message.token = row.token
-                      await sendFirebaseMessage(message)
-                    }
-                  })
-                })
-              await client.query(createPlayerQuery, createPlayerValues)
-              res.send(gameInfo)
-            }
+          .query(getGameInfoQuery, getGameInfoValues)
+          .then((result) => {
+            gameInfo.smallBlind = parseInt(result.rows[0].small_blind)
+            gameInfo.startingFunds = parseInt(result.rows[0].starting_funds)
           })
+
+        // Notify players about new player
+        const playersInRoomResult = await client.query(
+          getPlayersInRoomQuery,
+          getPlayersInRoomValues
+        )
+
+        const message = {
+          data: {
+            type: 'playerJoined',
+            // We know that the nickname will be defined
+            // because we checked it with celebrate.
+            nickname: req.query.nickname as string,
+            playerHash: sha256(req.query.playerToken).toString(),
+          },
+          token: '',
+        }
+        playersInRoomResult.rows.forEach(async (row) => {
+          gameInfo.players.push({
+            nickname: row.nickname,
+            playerHash: sha256(row.token).toString(),
+          })
+          message.token = row.token
+          await sendFirebaseMessage(message)
+        })
+        await client.query(createPlayerQuery, createPlayerValues)
+        res.send(gameInfo)
       })
       .catch((err) => {
         console.log(err.stack)
