@@ -3,6 +3,8 @@ import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import sha256 from 'crypto-js/sha256'
+import { type Client } from 'pg'
+import { deletePlayer } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -32,51 +34,29 @@ router.get(
     client
       .connect()
       .then(async () => {
-        // Define queries
-        const getGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
-        const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
-        const deletePlayerQuery = 'DELETE FROM Players WHERE token=$1'
+        // We already know that all request values are defined
+        const creatorToken = req.query.creatorToken as string
+        const playerToken = req.query.playerToken as string
 
-        // Check if game exists
-        const getGameResult = await client.query(getGameQuery, [
-          req.query.creatorToken,
-        ])
-
-        if (getGameResult.rowCount === 0) {
-          return res.sendStatus(400)
-        }
-        const gameId = getGameResult.rows[0].game_id
-
-        // Verify player is in game and kick
-        const getPlayersResult = await client.query(getPlayersQuery, [gameId])
-        let playerInGame = false
-        let kickedPlayerToken = ''
-
-        getPlayersResult.rows.forEach((row) => {
-          if (sha256(row.token).toString() === req.query.playerToken) {
-            playerInGame = true
-            kickedPlayerToken = row.token
-          }
-        })
-
-        if (!playerInGame) {
+        const gameId = await getGameId(creatorToken, client)
+        if (gameId === null) {
           return res.sendStatus(400)
         }
 
-        await client.query(deletePlayerQuery, [kickedPlayerToken])
+        const players = await getPlayersInGameTokens(gameId, client)
 
-        // Notify players about the changes
-        const message = {
-          data: {
-            type: 'playerKicked',
-            playerHash: req.query.playerToken as string,
-          },
-          token: '',
+        const kickedPlayerToken = await getKickedPlayerToken(
+          playerToken,
+          players,
+          client
+        )
+        if (kickedPlayerToken === null) {
+          return res.sendStatus(400)
         }
-        getPlayersResult.rows.forEach(async (row) => {
-          message.token = row.token
-          await sendFirebaseMessage(message)
-        })
+
+        await deletePlayer(kickedPlayerToken, client)
+
+        await notifyPlayers(playerToken, players, client)
 
         // TODO: Fix game state
 
@@ -91,5 +71,60 @@ router.get(
       })
   }
 )
+
+async function getGameId(
+  gameMaster: string,
+  client: Client
+): Promise<string | null> {
+  const getGameIdQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
+  const getGameIdValues = [gameMaster]
+  const result = await client.query(getGameIdQuery, getGameIdValues)
+  if (result.rowCount === 0) {
+    return null
+  } else {
+    return result.rows[0].game_id
+  }
+}
+
+async function getPlayersInGameTokens(
+  gameId: string,
+  client: Client
+): Promise<Array<{ token: string }>> {
+  const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
+  const getPlayersValues = [gameId]
+  return (await client.query(getPlayersQuery, getPlayersValues)).rows
+}
+
+async function getKickedPlayerToken(
+  playerHash: string,
+  players: Array<{ token: string }>,
+  client: Client
+): Promise<string | null> {
+  let token: string | null = null
+  players.forEach((player) => {
+    if (sha256(player.token).toString() === playerHash) {
+      token = player.token
+    }
+  })
+  return token
+}
+
+async function notifyPlayers(
+  playerHash: string,
+  players: Array<{ token: string }>,
+  client: Client
+) {
+  const message = {
+    data: {
+      type: 'playerKicked',
+      playerHash,
+    },
+    token: '',
+  }
+  players.forEach(async (row) => {
+    message.token = row.token
+    await sendFirebaseMessage(message)
+  })
+}
 
 export default router

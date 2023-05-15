@@ -30,3 +30,9 @@ export async function playerInGame(playerToken: string, client: Client) {
       .rowCount !== 0
   )
 }
+
+export async function deletePlayer(playerToken: string, client: Client) {
+  const deletePlayerQuery = 'DELETE FROM Players WHERE token=$1'
+  const deletePlayerValues = [playerToken]
+  await client.query(deletePlayerQuery, deletePlayerValues)
+}
