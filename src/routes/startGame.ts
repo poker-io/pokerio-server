@@ -5,6 +5,8 @@ import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import { type StartingGameInfo, type InternalPlayerInfo } from '../app'
 import { shuffleArray, fullCardDeck } from '../utils/randomise'
 import sha256 from 'crypto-js/sha256'
+import { type Client } from 'pg'
+import { getPlayersInGameTokens } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -30,101 +32,34 @@ router.get(
     client
       .connect()
       .then(async () => {
-        // Define queries
-        const getGameIdQuery = `SELECT game_id, starting_funds 
-        FROM Games WHERE game_master=$1 AND current_player IS NULL`
-        const getPlayersQuery =
-          'SELECT nickname, token FROM Players WHERE game_id=$1'
-        const updateGameStateQuery = `UPDATE Games SET current_player=$1, small_blind_who=$2, game_round=$3,
-        current_table_value=$4,
-        card1=$5, card2=$6, card3=$7, card4=$8, card5=$9 WHERE
-        game_id=$10`
-        const updatePlayerStateQuery =
-          'UPDATE Players SET turn=$1, card1=$2, card2=$3, funds=$4 WHERE token=$5'
+        // We already know that the request value is defined
+        const creatorToken = req.query.creatorToken as string
 
-        // Check if the player is a master of a non-started game
-        const getGameIdResult = await client.query(getGameIdQuery, [
-          req.query.creatorToken,
-        ])
-        if (getGameIdResult.rowCount === 0) {
-          return res.sendStatus(400)
-        }
-        const gameId = getGameIdResult.rows[0].game_id
-        const startingFunds = getGameIdResult.rows[0].starting_funds
-
-        // Get players
-        const playersResult = await client.query(getPlayersQuery, [gameId])
-        const playersCount = playersResult.rowCount
-        if (playersCount < 2) {
+        const { gameId, startingFunds } = await getGameInfoIfNotStarted(
+          creatorToken,
+          client
+        )
+        if (gameId === null) {
           return res.sendStatus(400)
         }
 
-        const playersInGame: InternalPlayerInfo[] = []
-        for (let i = 0; i < playersCount; i++) {
-          playersInGame.push({
-            token: playersResult.rows[i].token,
-            card1: '',
-            card2: '',
-          })
+        const players = await getPlayersInGameTokens(gameId, client)
+
+        if (players.length < 2) {
+          return res.sendStatus(400)
         }
 
-        // Deal out cards
-        shuffleArray(playersInGame)
-        const cardDeck = shuffleArray(fullCardDeck.slice())
+        const playersInGame = convertToInternalPlayerInfo(players)
 
-        const gameInfo: StartingGameInfo = {
-          players: [],
-          cards: [],
-        }
-        for (let i = 0; i < playersCount; i++) {
-          gameInfo.players.push({
-            playerHash: sha256(playersInGame[i].token).toString(),
-            turn: i + 1,
-          })
-          playersInGame[i].card1 = cardDeck.pop()
-          playersInGame[i].card2 = cardDeck.pop()
-        }
+        const cardDeck = fullCardDeck.slice()
 
-        for (let i = 0; i < 5; i++) {
-          gameInfo.cards.push(cardDeck.pop())
-        }
+        const gameInfo = createStartedGameInfo(playersInGame, cardDeck)
 
-        await client.query(updateGameStateQuery, [
-          playersInGame[0].token,
-          playersInGame[0].token,
-          1,
-          0,
-          ...gameInfo.cards,
-          gameId,
-        ])
+        await updateGameState(playersInGame[0].token, gameId, gameInfo, client)
 
-        for (let i = 0; i < playersCount; i++) {
-          await client.query(updatePlayerStateQuery, [
-            gameInfo.players[i].turn,
-            playersInGame[i].card1,
-            playersInGame[i].card2,
-            startingFunds,
-            playersInGame[i].token,
-          ])
-        }
+        await updatePlyersStates(playersInGame, startingFunds, gameInfo, client)
 
-        // Notify players about the game state
-        const message = {
-          data: {
-            type: 'startGame',
-            startedGameInfo: JSON.stringify(gameInfo),
-            card1: '',
-            card2: '',
-          },
-          token: '',
-        }
-
-        playersInGame.forEach(async (player) => {
-          message.token = player.token
-          message.data.card1 = player.card1
-          message.data.card2 = player.card2
-          await sendFirebaseMessage(message)
-        })
+        await notifyPlayers(playersInGame, gameInfo)
 
         res.sendStatus(200)
       })
@@ -133,5 +68,117 @@ router.get(
       })
   }
 )
+
+function convertToInternalPlayerInfo(players: Array<{ token: string }>) {
+  const playersInGame: InternalPlayerInfo[] = []
+  players.forEach((player) => {
+    playersInGame.push({
+      token: player.token,
+      card1: '',
+      card2: '',
+    })
+  })
+  return playersInGame
+}
+
+async function getGameInfoIfNotStarted(
+  gameMaster: string,
+  client: Client
+): Promise<{ gameId: string | null; startingFunds: string }> {
+  const gameInfo = { gameId: null, startingFunds: '' }
+  const query =
+    'SELECT game_id, starting_funds FROM Games WHERE game_master=$1 AND current_player IS NULL'
+  const result = await client.query(query, [gameMaster])
+  if (result.rowCount !== 0) {
+    gameInfo.gameId = result.rows[0].game_id
+    gameInfo.startingFunds = result.rows[0].starting_funds
+  }
+  return gameInfo
+}
+
+function createStartedGameInfo(
+  players: InternalPlayerInfo[],
+  cardDeck: string[]
+) {
+  const gameInfo: StartingGameInfo = {
+    players: [],
+    cards: [],
+  }
+  shuffleArray(players)
+  shuffleArray(cardDeck)
+  for (let i = 0; i < players.length; i++) {
+    gameInfo.players.push({
+      playerHash: sha256(players[i].token).toString(),
+      turn: i + 1,
+    })
+    players[i].card1 = cardDeck.pop() as string
+    players[i].card2 = cardDeck.pop() as string
+  }
+
+  for (let i = 0; i < 5; i++) {
+    gameInfo.cards.push(cardDeck.pop() as string)
+  }
+  return gameInfo
+}
+
+async function updateGameState(
+  firstPlayerToken: string,
+  gameId: string,
+  gameInfo: StartingGameInfo,
+  client: Client
+) {
+  const query = `UPDATE Games SET current_player=$1, small_blind_who=$2, 
+    game_round=$3, current_table_value=$4, 
+    card1=$5, card2=$6, card3=$7, card4=$8, card5=$9 WHERE game_id=$10`
+  const values = [
+    firstPlayerToken,
+    firstPlayerToken,
+    1,
+    0,
+    ...gameInfo.cards,
+    gameId,
+  ]
+  await client.query(query, values)
+}
+
+async function updatePlyersStates(
+  players: InternalPlayerInfo[],
+  startingFunds: string,
+  gameInfo: StartingGameInfo,
+  client: Client
+) {
+  const query =
+    'UPDATE Players SET turn=$1, card1=$2, card2=$3, funds=$4 WHERE token=$5'
+  const values = [0, 'card1', 'card2', startingFunds, 'token']
+  for (let i = 0; i < players.length; i++) {
+    values[0] = gameInfo.players[i].turn
+    values[1] = players[i].card1
+    values[2] = players[i].card2
+    values[4] = players[i].token
+    await client.query(query, values)
+  }
+}
+
+async function notifyPlayers(
+  players: InternalPlayerInfo[],
+  gameInfo: StartingGameInfo
+) {
+  const message = {
+    data: {
+      type: 'startGame',
+      startedGameInfo: JSON.stringify(gameInfo),
+      card1: '',
+      card2: '',
+    },
+    token: '',
+  }
+
+  players.forEach(async (player) => {
+    message.token = player.token
+    message.data.card1 = player.card1
+    message.data.card2 = player.card2
+    await sendFirebaseMessage(message)
+  })
+}
 
 export default router
