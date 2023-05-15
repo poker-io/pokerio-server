@@ -2,6 +2,8 @@ import { getClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
+import { type Client } from 'pg'
+import { getPlayersInGameTokens } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -29,56 +31,21 @@ router.get(
     client
       .connect()
       .then(async () => {
-        // Define queries
-        const getGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
-        const getCurrentPlayerQuery =
-          'SELECT current_player FROM Games WHERE game_id=$1 AND current_player IS NOT NULL'
-        const setNewSmallBlindStartingFunds =
-          'UPDATE Games SET  small_blind=$1, starting_funds=$2 WHERE game_id=$3'
-        const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
+        // We already know that all request values are defined
+        const creatorToken = req.query.creatorToken as string
+        const smallBlind = req.query.smallBlind as string
+        const startingFunds = req.query.startingFunds as string
 
-        // Check if games exist
-        const getGameResult = await client.query(getGameQuery, [
-          req.query.creatorToken,
-        ])
-
-        if (getGameResult.rowCount === 0) {
-          return res.sendStatus(400)
-        }
-        const gameId = getGameResult.rows[0].game_id
-
-        // Check if the game has not started yet
-        const getCurrentPlayerResult = await client.query(
-          getCurrentPlayerQuery,
-          [gameId]
-        )
-        if (getCurrentPlayerResult.rowCount !== 0) {
+        const gameId = await getGameIdIfNotStarted(creatorToken, client)
+        if (gameId === null) {
           return res.sendStatus(400)
         }
 
-        // Update settings
-        await client.query(setNewSmallBlindStartingFunds, [
-          req.query.smallBlind,
-          req.query.startingFunds,
-          gameId,
-        ])
+        await updateGameSettings(gameId, startingFunds, smallBlind, client)
 
-        // Notify players about the changes
-        const getPlayersResult = await client.query(getPlayersQuery, [gameId])
+        const players = await getPlayersInGameTokens(gameId, client)
 
-        const message = {
-          data: {
-            type: 'settingsUpdated',
-            startingFunds: (req.query.startingFunds as string).toString(),
-            smallBlind: (req.query.smallBlind as string).toString(),
-          },
-          token: '',
-        }
-
-        getPlayersResult.rows.forEach(async (row) => {
-          message.token = row.token
-          await sendFirebaseMessage(message)
-        })
+        await notifyPlayers(startingFunds, smallBlind, players)
 
         return res.sendStatus(200)
       })
@@ -91,5 +58,48 @@ router.get(
       })
   }
 )
+
+async function getGameIdIfNotStarted(
+  gameMaster: string,
+  client: Client
+): Promise<string | null> {
+  const getGameQuery =
+    'SELECT game_id FROM Games WHERE game_master=$1 AND current_player IS NULL'
+  const getGameValues = [gameMaster]
+  const getGameResult = await client.query(getGameQuery, getGameValues)
+  return getGameResult.rowCount === 0 ? null : getGameResult.rows[0].game_id
+}
+
+async function updateGameSettings(
+  gameId: string,
+  startingFunds: string,
+  smallBlind: string,
+  client: Client
+) {
+  const query =
+    'UPDATE Games SET  small_blind=$1, starting_funds=$2 WHERE game_id=$3'
+  const values = [smallBlind, startingFunds, gameId]
+  await client.query(query, values)
+}
+
+async function notifyPlayers(
+  startingFunds: string,
+  smallBlind: string,
+  players: Array<{ token: string }>
+) {
+  const message = {
+    data: {
+      type: 'settingsUpdated',
+      startingFunds,
+      smallBlind,
+    },
+    token: '',
+  }
+
+  players.forEach(async (player) => {
+    message.token = player.token
+    await sendFirebaseMessage(message)
+  })
+}
 
 export default router

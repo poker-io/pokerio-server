@@ -79,11 +79,7 @@ async function getGameId(
   const getGameIdQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
   const getGameIdValues = [gameMaster]
   const result = await client.query(getGameIdQuery, getGameIdValues)
-  if (result.rowCount === 0) {
-    return null
-  } else {
-    return result.rows[0].game_id
-  }
+  return result.rowCount === 0 ? null : result.rows[0].game_id
 }
 
 async function getKickedPlayerToken(
