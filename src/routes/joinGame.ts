@@ -71,7 +71,7 @@ router.get(
 async function isGameJoinable(gameId: string, client: Client) {
   const query = `SELECT game_master FROM Games g 
             join Players p on g.game_id = p.game_id 
-            WHERE g.game_id = $1 and g.game_round = 0
+            WHERE g.game_id = $1 and g.current_player IS NULL
             group by g.game_id having count(p.token) < 8`
   return (await client.query(query, [gameId])).rowCount !== 0
 }
