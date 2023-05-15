@@ -4,7 +4,7 @@ import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import sha256 from 'crypto-js/sha256'
 import { type Client } from 'pg'
-import { deletePlayer } from '../utils/commonRequest'
+import { deletePlayer, getPlayersInGameTokens } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -86,15 +86,6 @@ async function getGameId(
   }
 }
 
-async function getPlayersInGameTokens(
-  gameId: string,
-  client: Client
-): Promise<Array<{ token: string }>> {
-  const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
-  const getPlayersValues = [gameId]
-  return (await client.query(getPlayersQuery, getPlayersValues)).rows
-}
-
 async function getKickedPlayerToken(
   playerHash: string,
   players: Array<{ token: string }>,
@@ -121,8 +112,8 @@ async function notifyPlayers(
     },
     token: '',
   }
-  players.forEach(async (row) => {
-    message.token = row.token
+  players.forEach(async (player) => {
+    message.token = player.token
     await sendFirebaseMessage(message)
   })
 }

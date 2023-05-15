@@ -22,7 +22,10 @@ export async function createPlayer(
   await client.query(createPlayerQuery, createPlayerValues)
 }
 
-export async function playerInGame(playerToken: string, client: Client) {
+export async function playerInGame(
+  playerToken: string,
+  client: Client
+): Promise<boolean> {
   const checkIfPlayerInGameQuery = 'SELECT * FROM Players WHERE token=$1'
   const playerInGameValues = [playerToken]
   return (
@@ -35,4 +38,13 @@ export async function deletePlayer(playerToken: string, client: Client) {
   const deletePlayerQuery = 'DELETE FROM Players WHERE token=$1'
   const deletePlayerValues = [playerToken]
   await client.query(deletePlayerQuery, deletePlayerValues)
+}
+
+export async function getPlayersInGameTokens(
+  gameId: string,
+  client: Client
+): Promise<Array<{ token: string }>> {
+  const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
+  const getPlayersValues = [gameId]
+  return (await client.query(getPlayersQuery, getPlayersValues)).rows
 }

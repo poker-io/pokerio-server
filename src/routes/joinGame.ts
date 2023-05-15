@@ -124,12 +124,12 @@ async function completeInfoAndNotifyPlayers(
     token: '',
   }
 
-  players.forEach(async (row) => {
+  players.forEach(async (player) => {
     gameInfo.players.push({
-      nickname: row.nickname,
-      playerHash: sha256(row.token).toString(),
+      nickname: player.nickname,
+      playerHash: sha256(player.token).toString(),
     })
-    message.token = row.token
+    message.token = player.token
     await sendFirebaseMessage(message)
   })
 }
