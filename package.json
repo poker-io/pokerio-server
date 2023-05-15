@@ -47,11 +47,12 @@
     "collectCoverage": true,
     "testEnvironment": "node",
     "collectCoverageFrom": [
-      "src/*.ts",
-      "src/routes/*.ts"
+      "src/**/*"
     ],
     "coveragePathIgnorePatterns": [
-      "src/secrets.ts"
+      "src/secrets.ts",
+      "src/tests/*",
+      "src/serviceAccount.json"
     ],
     "preset": "ts-jest"
   },
