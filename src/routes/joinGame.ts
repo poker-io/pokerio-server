@@ -6,6 +6,7 @@ import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
 import { type Client } from 'pg'
+import { playerInGame, createPlayer } from '../utils/commonRequest'
 
 const router: Router = express.Router()
 
@@ -29,7 +30,7 @@ router.get(
     client
       .connect()
       .then(async () => {
-        // We already know that all the values are defined
+        // We already know that all request values are defined
         const playerToken = req.query.playerToken as string
         const nickname = req.query.nickname as string
         const gameId = req.query.gameId as string
@@ -79,37 +80,6 @@ async function isGameJoinable(gameId: string, client: Client) {
   )
 }
 
-async function playerInGame(playerToken: string, client: Client) {
-  const checkIfPlayerInGameQuery = 'SELECT * FROM Players WHERE token=$1'
-  const playerInGameValues = [playerToken]
-  return (
-    (await client.query(checkIfPlayerInGameQuery, playerInGameValues))
-      .rowCount !== 0
-  )
-}
-
-async function createPlayer(
-  playerToken: string,
-  nickname: string,
-  gameId: string,
-  client: Client
-) {
-  const createPlayerQuery = `INSERT INTO Players(token, nickname, turn, 
-            game_id, card1, card2, funds, bet) 
-            VALUES($1, $2, $3, $4, $5, $6, $7, $8)`
-  const createPlayerValues = [
-    playerToken,
-    nickname,
-    0,
-    gameId,
-    null,
-    null,
-    null,
-    null,
-  ]
-  await client.query(createPlayerQuery, createPlayerValues)
-}
-
 async function getGameInfo(gameId: string, client: Client) {
   const getGameInfoQuery = 'SELECT * FROM Games WHERE game_id=$1'
   const getGameInfoValues = [gameId]
@@ -153,6 +123,7 @@ async function completeInfoAndNotifyPlayers(
     },
     token: '',
   }
+
   players.forEach(async (row) => {
     gameInfo.players.push({
       nickname: row.nickname,
