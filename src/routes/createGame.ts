@@ -6,7 +6,8 @@ import {
   type NewGameInfo,
 } from '../app'
 import { verifyFCMToken } from '../utils/firebase'
-
+import { playerInGame, createPlayer } from '../utils/commonRequest'
+import { type Client } from 'pg'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
 const router: Router = express.Router()
@@ -35,61 +36,41 @@ router.get(
     client
       .connect()
       .then(async () => {
-        // Define queries
-        const createPlayerQuery =
-          'INSERT INTO Players(token, nickname, turn, game_id, card1, card2, funds, bet) VALUES($1, $2, $3, $4, $5, $6, $7, $8)'
-        const createPlayerValues = [
-          req.query.creatorToken,
-          req.query.nickname,
-          0,
-          null,
-          null,
-          null,
-          null,
-          null,
-        ]
-        const createGameQuery =
-          'SELECT * FROM insert_with_random_key($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) '
-        const values = [
-          req.query.creatorToken,
-          null,
-          null,
-          null,
-          null,
-          null,
-          0,
-          req.query.startingFunds ?? startingFundsDefault,
-          req.query.smallBlind ?? smallBlindDefault,
-          null,
-          0,
-          null,
-        ]
+        // We already know that these request values are defined
+        const creatorToken = req.query.creatorToken as string
+        const nickname = req.query.nickname as string
 
-        // Create game
-        await client.query(createPlayerQuery, createPlayerValues)
-        await client.query(createGameQuery, values).then(async (result) => {
-          await client
-            .query('UPDATE Players SET game_id=$1 WHERE token=$2', [
-              result.rows[0].insert_with_random_key,
-              req.query.creatorToken,
-            ])
-            .then(() => {
-              const newGame: NewGameInfo = {
-                gameKey: result.rows[0].insert_with_random_key,
-                startingFunds: startingFundsDefault,
-                smallBlind: smallBlindDefault,
-              }
-              if (req.query.startingFunds !== undefined) {
-                newGame.startingFunds = parseInt(
-                  req.query.startingFunds as string
-                )
-              }
-              if (req.query.smallBlind !== undefined) {
-                newGame.smallBlind = parseInt(req.query.smallBlind as string)
-              }
-              res.send(newGame)
-            })
-        })
+        const smallBlind =
+          req.query.smallBlind === undefined
+            ? smallBlindDefault.toString()
+            : (req.query.smallBlind as string)
+        const startingFunds =
+          req.query.startingFunds === undefined
+            ? startingFundsDefault.toString()
+            : (req.query.startingFunds as string)
+
+        if (await playerInGame(creatorToken, client)) {
+          return res.sendStatus(400)
+        }
+
+        await createPlayer(creatorToken, nickname, null, client)
+
+        const gameKey = await createGame(
+          creatorToken,
+          nickname,
+          startingFunds,
+          smallBlind,
+          client
+        )
+
+        await updatePlayer(creatorToken, gameKey, client)
+
+        const newGame: NewGameInfo = {
+          gameKey: parseInt(gameKey),
+          startingFunds: parseInt(startingFunds),
+          smallBlind: parseInt(smallBlind),
+        }
+        res.send(newGame)
       })
       .catch(async (err) => {
         console.log(err.stack)
@@ -100,5 +81,42 @@ router.get(
       })
   }
 )
+
+async function createGame(
+  creatorToken: string,
+  nickname: string,
+  startingFunds: string,
+  smallBlind: string,
+  client: Client
+): Promise<string> {
+  const createGameQuery = `SELECT * FROM insert_with_random_key($1, $2, $3, $4, 
+        $5, $6, $7, $8, $9, $10, $11, $12)`
+  const values = [
+    creatorToken,
+    null,
+    null,
+    null,
+    null,
+    null,
+    0,
+    startingFunds,
+    smallBlind,
+    null,
+    0,
+    null,
+  ]
+  return (await client.query(createGameQuery, values)).rows[0]
+    .insert_with_random_key
+}
+
+async function updatePlayer(
+  playerToken: string,
+  gameKey: string,
+  client: Client
+) {
+  const updatePlayerQuery = 'UPDATE Players SET game_id=$1 WHERE token=$2'
+  const updatePlayerValues = [gameKey, playerToken]
+  await client.query(updatePlayerQuery, updatePlayerValues)
+}
 
 export default router
