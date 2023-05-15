@@ -89,7 +89,7 @@ async function createGame(
   smallBlind: string,
   client: Client
 ): Promise<string> {
-  const createGameQuery = `SELECT * FROM insert_with_random_key($1, $2, $3, $4, 
+  const query = `SELECT * FROM insert_with_random_key($1, $2, $3, $4, 
         $5, $6, $7, $8, $9, $10, $11, $12)`
   const values = [
     creatorToken,
@@ -105,8 +105,7 @@ async function createGame(
     0,
     null,
   ]
-  return (await client.query(createGameQuery, values)).rows[0]
-    .insert_with_random_key
+  return (await client.query(query, values)).rows[0].insert_with_random_key
 }
 
 async function updatePlayer(
@@ -114,9 +113,9 @@ async function updatePlayer(
   gameKey: string,
   client: Client
 ) {
-  const updatePlayerQuery = 'UPDATE Players SET game_id=$1 WHERE token=$2'
-  const updatePlayerValues = [gameKey, playerToken]
-  await client.query(updatePlayerQuery, updatePlayerValues)
+  const query = 'UPDATE Players SET game_id=$1 WHERE token=$2'
+  const values = [gameKey, playerToken]
+  await client.query(query, values)
 }
 
 export default router

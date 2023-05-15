@@ -63,11 +63,10 @@ async function getGameIdIfNotStarted(
   gameMaster: string,
   client: Client
 ): Promise<string | null> {
-  const getGameQuery =
+  const query =
     'SELECT game_id FROM Games WHERE game_master=$1 AND current_player IS NULL'
-  const getGameValues = [gameMaster]
-  const getGameResult = await client.query(getGameQuery, getGameValues)
-  return getGameResult.rowCount === 0 ? null : getGameResult.rows[0].game_id
+  const result = await client.query(query, [gameMaster])
+  return result.rowCount === 0 ? null : result.rows[0].game_id
 }
 
 async function updateGameSettings(

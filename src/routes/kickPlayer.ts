@@ -76,9 +76,8 @@ async function getGameId(
   gameMaster: string,
   client: Client
 ): Promise<string | null> {
-  const getGameIdQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
-  const getGameIdValues = [gameMaster]
-  const result = await client.query(getGameIdQuery, getGameIdValues)
+  const query = 'SELECT game_id FROM Games WHERE game_master=$1'
+  const result = await client.query(query, [gameMaster])
   return result.rowCount === 0 ? null : result.rows[0].game_id
 }
 

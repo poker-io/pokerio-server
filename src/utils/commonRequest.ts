@@ -6,45 +6,30 @@ export async function createPlayer(
   gameId: string | null,
   client: Client
 ) {
-  const createPlayerQuery = `INSERT INTO Players(token, nickname, turn, 
+  const query = `INSERT INTO Players(token, nickname, turn, 
             game_id, card1, card2, funds, bet) 
             VALUES($1, $2, $3, $4, $5, $6, $7, $8)`
-  const createPlayerValues = [
-    playerToken,
-    nickname,
-    0,
-    gameId,
-    null,
-    null,
-    null,
-    null,
-  ]
-  await client.query(createPlayerQuery, createPlayerValues)
+  const values = [playerToken, nickname, 0, gameId, null, null, null, null]
+  await client.query(query, values)
 }
 
 export async function playerInGame(
   playerToken: string,
   client: Client
 ): Promise<boolean> {
-  const checkIfPlayerInGameQuery = 'SELECT * FROM Players WHERE token=$1'
-  const playerInGameValues = [playerToken]
-  return (
-    (await client.query(checkIfPlayerInGameQuery, playerInGameValues))
-      .rowCount !== 0
-  )
+  const query = 'SELECT * FROM Players WHERE token=$1'
+  return (await client.query(query, [playerToken])).rowCount !== 0
 }
 
 export async function deletePlayer(playerToken: string, client: Client) {
-  const deletePlayerQuery = 'DELETE FROM Players WHERE token=$1'
-  const deletePlayerValues = [playerToken]
-  await client.query(deletePlayerQuery, deletePlayerValues)
+  const query = 'DELETE FROM Players WHERE token=$1'
+  await client.query(query, [playerToken])
 }
 
 export async function getPlayersInGameTokens(
   gameId: string,
   client: Client
 ): Promise<Array<{ token: string }>> {
-  const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
-  const getPlayersValues = [gameId]
-  return (await client.query(getPlayersQuery, getPlayersValues)).rows
+  const query = 'SELECT token FROM Players WHERE game_id=$1'
+  return (await client.query(query, [gameId])).rows
 }

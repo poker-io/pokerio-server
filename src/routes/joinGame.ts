@@ -69,20 +69,15 @@ router.get(
 )
 
 async function isGameJoinable(gameId: string, client: Client) {
-  const checkIfGameIsJoinableQuery = `SELECT game_master FROM Games g 
+  const query = `SELECT game_master FROM Games g 
             join Players p on g.game_id = p.game_id 
             WHERE g.game_id = $1 and g.game_round = 0
             group by g.game_id having count(p.token) < 8`
-  const gameCheckValues = [gameId]
-  return (
-    (await client.query(checkIfGameIsJoinableQuery, gameCheckValues))
-      .rowCount !== 0
-  )
+  return (await client.query(query, [gameId])).rowCount !== 0
 }
 
 async function getGameInfo(gameId: string, client: Client) {
-  const getGameInfoQuery = 'SELECT * FROM Games WHERE game_id=$1'
-  const getGameInfoValues = [gameId]
+  const query = 'SELECT * FROM Games WHERE game_id=$1'
 
   const gameInfo: GameSettings = {
     smallBlind: 0,
@@ -90,7 +85,7 @@ async function getGameInfo(gameId: string, client: Client) {
     players: [],
     gameMasterHash: '',
   }
-  await client.query(getGameInfoQuery, getGameInfoValues).then((result) => {
+  await client.query(query, [gameId]).then((result) => {
     gameInfo.smallBlind = parseInt(result.rows[0].small_blind)
     gameInfo.startingFunds = parseInt(result.rows[0].starting_funds)
     gameInfo.gameMasterHash = sha256(result.rows[0].game_master).toString()
@@ -102,11 +97,8 @@ async function getPlayersInGame(
   gameId: string,
   client: Client
 ): Promise<Array<{ nickname: string; token: string }>> {
-  const getPlayersInGameQuery =
-    'SELECT nickname, token FROM Players WHERE game_id=$1'
-  const getPlayersInGameValues = [gameId]
-  return (await client.query(getPlayersInGameQuery, getPlayersInGameValues))
-    .rows
+  const query = 'SELECT nickname, token FROM Players WHERE game_id=$1'
+  return (await client.query(query, [gameId])).rows
 }
 
 async function completeInfoAndNotifyPlayers(

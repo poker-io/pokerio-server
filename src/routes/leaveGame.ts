@@ -71,22 +71,19 @@ async function getGameId(
   playerToken: string,
   client: Client
 ): Promise<string | null> {
-  const getGameIdQuery = 'SELECT game_id FROM Players WHERE token=$1'
-  const values = [playerToken]
-  const getGameIdResult = await client.query(getGameIdQuery, values)
-  return getGameIdResult.rowCount === 0 ? null : getGameIdResult.rows[0].game_id
+  const query = 'SELECT game_id FROM Players WHERE token=$1'
+  const result = await client.query(query, [playerToken])
+  return result.rowCount === 0 ? null : result.rows[0].game_id
 }
 
 async function getGameMaster(gameId: string, client: Client): Promise<string> {
-  const getGameMasterQuery = 'SELECT game_master FROM Games WHERE game_id=$1'
-  const values = [gameId]
-  return (await client.query(getGameMasterQuery, values)).rows[0].game_master
+  const query = 'SELECT game_master FROM Games WHERE game_id=$1'
+  return (await client.query(query, [gameId])).rows[0].game_master
 }
 
 async function deleteGame(gameId: string, client: Client) {
-  const deleteGameQuery = 'DELETE FROM Games WHERE game_id=$1'
-  const values = [gameId]
-  await client.query(deleteGameQuery, values)
+  const query = 'DELETE FROM Games WHERE game_id=$1'
+  await client.query(query, [gameId])
 }
 
 async function changeGameMaster(
@@ -94,10 +91,9 @@ async function changeGameMaster(
   newGameMaster: string,
   client: Client
 ) {
-  const changeGameMasterQuery =
-    'UPDATE Games SET game_master=$1 WHERE game_id=$2'
+  const query = 'UPDATE Games SET game_master=$1 WHERE game_id=$2'
   const values = [newGameMaster, gameId]
-  await client.query(changeGameMasterQuery, values)
+  await client.query(query, values)
 }
 
 // This function will handle database side of handling change of game master
