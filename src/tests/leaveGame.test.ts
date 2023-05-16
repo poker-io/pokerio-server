@@ -1,7 +1,7 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
-import { type NewGameInfo } from '../app'
+import type { NewGameInfo } from '../utils/types'
 
 test('Leave game, wrong args', (doneLeave) => {
   const gameMasterToken = 'TESTLEAVE_INCORRECT'

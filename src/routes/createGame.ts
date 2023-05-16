@@ -1,12 +1,13 @@
 import { getClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
+import { verifyFCMToken } from '../utils/firebase'
 import {
   startingFundsDefault,
   smallBlindDefault,
-  type NewGameInfo,
-} from '../app'
-import { verifyFCMToken } from '../utils/firebase'
-import { isPlayerInGame, createPlayer } from '../utils/commonRequest'
+  isPlayerInGame,
+  createPlayer,
+} from '../utils/commonRequest'
+import type { NewGameInfo } from '../utils/types'
 import { type Client } from 'pg'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'

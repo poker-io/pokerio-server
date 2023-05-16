@@ -2,7 +2,7 @@ import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
 import sha256 from 'crypto-js/sha256'
-import { type NewGameInfo } from '../app'
+import type { NewGameInfo } from '../utils/types'
 
 test('Kick player, wrong args', (done) => {
   request(app).get('/kickPlayer').expect(400).end(done)

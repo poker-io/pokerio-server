@@ -1,5 +1,8 @@
 import { type Client } from 'pg'
 
+export const startingFundsDefault = 1000
+export const smallBlindDefault = 100
+
 export async function createPlayer(
   playerToken: string,
   nickname: string,

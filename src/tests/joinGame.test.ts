@@ -1,7 +1,7 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
-import type { GameSettings } from '../app'
+import type { GameSettings } from '../utils/types'
 import sha256 from 'crypto-js/sha256'
 
 test('Join game, wrong args', (doneJoin) => {
