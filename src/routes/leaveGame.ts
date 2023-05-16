@@ -7,6 +7,7 @@ import { type Client } from 'pg'
 import { deletePlayer, getPlayersInGameTokens } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
+import type { PlayersTokens } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -102,7 +103,7 @@ async function changeGameMaster(
 async function handleGameMasterChange(
   gameId: string,
   gameMaster: string,
-  players: Array<{ token: string }>,
+  players: PlayersTokens,
   client: Client
 ) {
   let newGameMaster = gameMaster
@@ -121,7 +122,7 @@ async function handleGameMasterChange(
 async function notifyPlayers(
   playerToken: string,
   gameMaster: string,
-  players: Array<{ token: string }>
+  players: PlayersTokens
 ) {
   const message = {
     data: {

@@ -31,3 +31,5 @@ export interface StartingGameInfo {
   players: PlayerGameInfo[]
   cards: string[]
 }
+
+export type PlayersTokens = Array<{ token: string }>

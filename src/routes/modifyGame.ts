@@ -6,6 +6,7 @@ import { type Client } from 'pg'
 import { getPlayersInGameTokens } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
+import type { PlayersTokens } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -84,7 +85,7 @@ async function updateGameSettings(
 async function notifyPlayers(
   startingFunds: string,
   smallBlind: string,
-  players: Array<{ token: string }>
+  players: PlayersTokens
 ) {
   const message = {
     data: {

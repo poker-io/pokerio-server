@@ -2,6 +2,7 @@ import { getClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
+import type { PlayersTokens } from '../utils/types'
 import sha256 from 'crypto-js/sha256'
 import { type Client } from 'pg'
 import { deletePlayer, getPlayersInGameTokens } from '../utils/commonRequest'
@@ -83,7 +84,7 @@ async function getGameId(
 
 async function getKickedPlayerToken(
   playerHash: string,
-  players: Array<{ token: string }>,
+  players: PlayersTokens,
   client: Client
 ): Promise<string | null> {
   let token: string | null = null
@@ -97,7 +98,7 @@ async function getKickedPlayerToken(
 
 async function notifyPlayers(
   playerHash: string,
-  players: Array<{ token: string }>,
+  players: PlayersTokens,
   client: Client
 ) {
   const message = {

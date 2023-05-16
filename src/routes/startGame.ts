@@ -2,7 +2,11 @@ import { getClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
-import type { StartingGameInfo, InternalPlayerInfo } from '../utils/types'
+import type {
+  StartingGameInfo,
+  InternalPlayerInfo,
+  PlayersTokens,
+} from '../utils/types'
 import { shuffleArray, fullCardDeck } from '../utils/randomise'
 import sha256 from 'crypto-js/sha256'
 import { type Client } from 'pg'
@@ -69,7 +73,7 @@ router.get(
   }
 )
 
-function convertToInternalPlayerInfo(players: Array<{ token: string }>) {
+function convertToInternalPlayerInfo(players: PlayersTokens) {
   const playersInGame: InternalPlayerInfo[] = []
   players.forEach((player) => {
     playersInGame.push({
