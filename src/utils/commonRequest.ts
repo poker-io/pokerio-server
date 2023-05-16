@@ -1,8 +1,9 @@
 import { type Client } from 'pg'
 import type { SimpPlayer } from './types'
 
-export const startingFundsDefault = 1000
-export const smallBlindDefault = 100
+export const STARTING_FUNDS_DEFAULT = 1000
+export const SMALL_BLIND_DEFAULT = 100
+export const MAX_PLAYERS = 8
 
 export async function createPlayer(
   playerToken: string,

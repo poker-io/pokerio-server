@@ -10,6 +10,7 @@ import {
   isPlayerInGame,
   createPlayer,
   getPlayersInGame,
+  MAX_PLAYERS,
 } from '../utils/commonRequest'
 
 const router: Router = express.Router()
@@ -75,8 +76,9 @@ async function isGameJoinable(gameId: string, client: Client) {
   const query = `SELECT game_master FROM Games g 
             join Players p on g.game_id = p.game_id 
             WHERE g.game_id = $1 and g.current_player IS NULL
-            group by g.game_id having count(p.token) < 8`
-  return (await client.query(query, [gameId])).rowCount !== 0
+            group by g.game_id having count(p.token) < $2`
+  const values = [gameId, MAX_PLAYERS]
+  return (await client.query(query, values)).rowCount !== 0
 }
 
 async function getGameInfo(gameId: string, client: Client) {
@@ -88,11 +90,10 @@ async function getGameInfo(gameId: string, client: Client) {
     players: [],
     gameMasterHash: '',
   }
-  await client.query(query, [gameId]).then((result) => {
-    gameInfo.smallBlind = parseInt(result.rows[0].small_blind)
-    gameInfo.startingFunds = parseInt(result.rows[0].starting_funds)
-    gameInfo.gameMasterHash = sha256(result.rows[0].game_master).toString()
-  })
+  const result = await client.query(query, [gameId])
+  gameInfo.smallBlind = parseInt(result.rows[0].small_blind)
+  gameInfo.startingFunds = parseInt(result.rows[0].starting_funds)
+  gameInfo.gameMasterHash = sha256(result.rows[0].game_master).toString()
   return gameInfo
 }
 

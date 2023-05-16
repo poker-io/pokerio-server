@@ -2,8 +2,8 @@ import { getClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { verifyFCMToken } from '../utils/firebase'
 import {
-  startingFundsDefault,
-  smallBlindDefault,
+  STARTING_FUNDS_DEFAULT,
+  SMALL_BLIND_DEFAULT,
   isPlayerInGame,
   createPlayer,
 } from '../utils/commonRequest'
@@ -33,11 +33,11 @@ router.get(
     const nickname = req.query.nickname as string
     const smallBlind =
       req.query.smallBlind === undefined
-        ? smallBlindDefault.toString()
+        ? SMALL_BLIND_DEFAULT.toString()
         : (req.query.smallBlind as string)
     const startingFunds =
       req.query.startingFunds === undefined
-        ? startingFundsDefault.toString()
+        ? STARTING_FUNDS_DEFAULT.toString()
         : (req.query.startingFunds as string)
 
     if (!(await verifyFCMToken(creatorToken))) {
