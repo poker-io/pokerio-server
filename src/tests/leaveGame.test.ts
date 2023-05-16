@@ -33,7 +33,7 @@ test('Leave game, correct arguments', async () => {
     )
     .expect(200)
 
-  const key = (res.body as NewGameInfo).gameKey
+  const key = (res.body as NewGameInfo).gameId
   await request(app)
     .get(
       `/joinGame?playerToken=${playerToken}&nickname=${playerNick}&gameId=${key}`

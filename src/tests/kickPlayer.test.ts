@@ -29,7 +29,7 @@ test('Kick player, correct arguments', async () => {
         .concat(gameMasterNick)
     )
     .expect(200)
-  const gameId = (res.body as NewGameInfo).gameKey
+  const gameId = (res.body as NewGameInfo).gameId
 
   // Creator exists, but the player does not
   await request(app)

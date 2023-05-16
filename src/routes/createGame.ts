@@ -6,7 +6,7 @@ import {
   type NewGameInfo,
 } from '../app'
 import { verifyFCMToken } from '../utils/firebase'
-import { playerInGame, createPlayer } from '../utils/commonRequest'
+import { isPlayerInGame, createPlayer } from '../utils/commonRequest'
 import { type Client } from 'pg'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
@@ -49,13 +49,13 @@ router.get(
             ? startingFundsDefault.toString()
             : (req.query.startingFunds as string)
 
-        if (await playerInGame(creatorToken, client)) {
+        if (await isPlayerInGame(creatorToken, client)) {
           return res.sendStatus(400)
         }
 
         await createPlayer(creatorToken, nickname, null, client)
 
-        const gameKey = await createGame(
+        const gameId = await createGame(
           creatorToken,
           nickname,
           startingFunds,
@@ -63,13 +63,14 @@ router.get(
           client
         )
 
-        await updatePlayer(creatorToken, gameKey, client)
+        await setPlayersGameId(creatorToken, gameId, client)
 
         const newGame: NewGameInfo = {
-          gameKey: parseInt(gameKey),
+          gameId: parseInt(gameId),
           startingFunds: parseInt(startingFunds),
           smallBlind: parseInt(smallBlind),
         }
+
         res.send(newGame)
       })
       .catch(async (err) => {
@@ -108,13 +109,13 @@ async function createGame(
   return (await client.query(query, values)).rows[0].insert_with_random_key
 }
 
-async function updatePlayer(
+async function setPlayersGameId(
   playerToken: string,
-  gameKey: string,
+  gameId: string,
   client: Client
 ) {
   const query = 'UPDATE Players SET game_id=$1 WHERE token=$2'
-  const values = [gameKey, playerToken]
+  const values = [gameId, playerToken]
   await client.query(query, values)
 }
 

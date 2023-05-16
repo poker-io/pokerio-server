@@ -107,6 +107,7 @@ async function notifyPlayers(
     },
     token: '',
   }
+
   players.forEach(async (player) => {
     message.token = player.token
     await sendFirebaseMessage(message)

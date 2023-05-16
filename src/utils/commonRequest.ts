@@ -13,7 +13,7 @@ export async function createPlayer(
   await client.query(query, values)
 }
 
-export async function playerInGame(
+export async function isPlayerInGame(
   playerToken: string,
   client: Client
 ): Promise<boolean> {

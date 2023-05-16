@@ -36,7 +36,7 @@ export interface GameSettings {
 }
 
 export interface NewGameInfo {
-  gameKey: number
+  gameId: number
   startingFunds: number
   smallBlind: number
 }

@@ -6,7 +6,7 @@ import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
 import { type Client } from 'pg'
-import { playerInGame, createPlayer } from '../utils/commonRequest'
+import { isPlayerInGame, createPlayer } from '../utils/commonRequest'
 
 const router: Router = express.Router()
 
@@ -35,7 +35,7 @@ router.get(
         const nickname = req.query.nickname as string
         const gameId = req.query.gameId as string
 
-        if (await playerInGame(playerToken, client)) {
+        if (await isPlayerInGame(playerToken, client)) {
           return res.sendStatus(400)
         }
 
