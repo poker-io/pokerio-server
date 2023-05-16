@@ -2,10 +2,10 @@ import { getClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
-import type { PlayersTokens } from '../utils/types'
+import type { SimpPlayer } from '../utils/types'
 import sha256 from 'crypto-js/sha256'
 import { type Client } from 'pg'
-import { deletePlayer, getPlayersInGameTokens } from '../utils/commonRequest'
+import { deletePlayer, getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -44,20 +44,16 @@ router.get(
           return res.sendStatus(400)
         }
 
-        const players = await getPlayersInGameTokens(gameId, client)
+        const players = await getPlayersInGame(gameId, client)
 
-        const kickedPlayerToken = await getKickedPlayerToken(
-          playerToken,
-          players,
-          client
-        )
+        const kickedPlayerToken = getKickedPlayerToken(playerToken, players)
         if (kickedPlayerToken === null) {
           return res.sendStatus(402)
         }
 
         await deletePlayer(kickedPlayerToken, client)
 
-        await notifyPlayers(playerToken, players, client)
+        await notifyPlayers(playerToken, players)
 
         // TODO: Fix game state
 
@@ -82,11 +78,10 @@ async function getGameId(
   return result.rowCount === 0 ? null : result.rows[0].game_id
 }
 
-async function getKickedPlayerToken(
+function getKickedPlayerToken(
   playerHash: string,
-  players: PlayersTokens,
-  client: Client
-): Promise<string | null> {
+  players: SimpPlayer[]
+): string | null {
   let token: string | null = null
   players.forEach((player) => {
     if (sha256(player.token).toString() === playerHash) {
@@ -96,11 +91,7 @@ async function getKickedPlayerToken(
   return token
 }
 
-async function notifyPlayers(
-  playerHash: string,
-  players: PlayersTokens,
-  client: Client
-) {
+async function notifyPlayers(playerHash: string, players: SimpPlayer[]) {
   const message = {
     data: {
       type: 'playerKicked',

@@ -4,10 +4,10 @@ import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import sha256 from 'crypto-js/sha256'
 import { type Client } from 'pg'
-import { deletePlayer, getPlayersInGameTokens } from '../utils/commonRequest'
+import { deletePlayer, getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
-import type { PlayersTokens } from '../utils/types'
+import type { SimpPlayer } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -35,7 +35,7 @@ router.get(
           return res.sendStatus(400)
         }
 
-        const players = await getPlayersInGameTokens(gameId, client)
+        const players = await getPlayersInGame(gameId, client)
 
         let gameMaster = await getGameMaster(gameId, client)
 
@@ -103,7 +103,7 @@ async function changeGameMaster(
 async function handleGameMasterChange(
   gameId: string,
   gameMaster: string,
-  players: PlayersTokens,
+  players: SimpPlayer[],
   client: Client
 ) {
   let newGameMaster = gameMaster
@@ -122,7 +122,7 @@ async function handleGameMasterChange(
 async function notifyPlayers(
   playerToken: string,
   gameMaster: string,
-  players: PlayersTokens
+  players: SimpPlayer[]
 ) {
   const message = {
     data: {

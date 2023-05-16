@@ -5,12 +5,12 @@ import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import type {
   StartingGameInfo,
   InternalPlayerInfo,
-  PlayersTokens,
+  SimpPlayer,
 } from '../utils/types'
 import { shuffleArray, fullCardDeck } from '../utils/randomise'
 import sha256 from 'crypto-js/sha256'
 import { type Client } from 'pg'
-import { getPlayersInGameTokens } from '../utils/commonRequest'
+import { getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -47,7 +47,7 @@ router.get(
           return res.sendStatus(400)
         }
 
-        const players = await getPlayersInGameTokens(gameId, client)
+        const players = await getPlayersInGame(gameId, client)
 
         if (players.length < 2) {
           return res.sendStatus(402)
@@ -73,7 +73,7 @@ router.get(
   }
 )
 
-function convertToInternalPlayerInfo(players: PlayersTokens) {
+function convertToInternalPlayerInfo(players: SimpPlayer[]) {
   const playersInGame: InternalPlayerInfo[] = []
   players.forEach((player) => {
     playersInGame.push({

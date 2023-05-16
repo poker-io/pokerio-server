@@ -1,5 +1,5 @@
 import { type Client } from 'pg'
-import type { PlayersTokens } from './types'
+import type { SimpPlayer } from './types'
 
 export const startingFundsDefault = 1000
 export const smallBlindDefault = 100
@@ -30,10 +30,10 @@ export async function deletePlayer(playerToken: string, client: Client) {
   await client.query(query, [playerToken])
 }
 
-export async function getPlayersInGameTokens(
+export async function getPlayersInGame(
   gameId: string,
   client: Client
-): Promise<PlayersTokens> {
-  const query = 'SELECT token FROM Players WHERE game_id=$1'
+): Promise<SimpPlayer[]> {
+  const query = 'SELECT token, nickname FROM Players WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows
 }

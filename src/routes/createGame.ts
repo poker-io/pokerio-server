@@ -58,7 +58,6 @@ router.get(
 
         const gameId = await createGame(
           creatorToken,
-          nickname,
           startingFunds,
           smallBlind,
           client
@@ -86,7 +85,6 @@ router.get(
 
 async function createGame(
   creatorToken: string,
-  nickname: string,
   startingFunds: string,
   smallBlind: string,
   client: Client

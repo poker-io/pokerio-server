@@ -32,4 +32,7 @@ export interface StartingGameInfo {
   cards: string[]
 }
 
-export type PlayersTokens = Array<{ token: string }>
+export interface SimpPlayer {
+  nickname: string
+  token: string
+}

@@ -1,12 +1,16 @@
 import { getClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import sha256 from 'crypto-js/sha256'
-import type { GameSettings } from '../utils/types'
+import type { GameSettings, SimpPlayer } from '../utils/types'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
 import { type Client } from 'pg'
-import { isPlayerInGame, createPlayer } from '../utils/commonRequest'
+import {
+  isPlayerInGame,
+  createPlayer,
+  getPlayersInGame,
+} from '../utils/commonRequest'
 
 const router: Router = express.Router()
 
@@ -93,19 +97,11 @@ async function getGameInfo(gameId: string, client: Client) {
   return gameInfo
 }
 
-async function getPlayersInGame(
-  gameId: string,
-  client: Client
-): Promise<Array<{ nickname: string; token: string }>> {
-  const query = 'SELECT nickname, token FROM Players WHERE game_id=$1'
-  return (await client.query(query, [gameId])).rows
-}
-
 async function completeInfoAndNotifyPlayers(
   gameInfo: GameSettings,
   nickname: string,
   playerToken: string,
-  players: Array<{ nickname: string; token: string }>
+  players: SimpPlayer[]
 ) {
   const message = {
     data: {

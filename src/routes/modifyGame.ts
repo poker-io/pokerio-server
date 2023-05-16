@@ -3,10 +3,10 @@ import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import { type Client } from 'pg'
-import { getPlayersInGameTokens } from '../utils/commonRequest'
+import { getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
-import type { PlayersTokens } from '../utils/types'
+import type { SimpPlayer } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -44,7 +44,7 @@ router.get(
 
         await updateGameSettings(gameId, startingFunds, smallBlind, client)
 
-        const players = await getPlayersInGameTokens(gameId, client)
+        const players = await getPlayersInGame(gameId, client)
 
         await notifyPlayers(startingFunds, smallBlind, players)
 
@@ -85,7 +85,7 @@ async function updateGameSettings(
 async function notifyPlayers(
   startingFunds: string,
   smallBlind: string,
-  players: PlayersTokens
+  players: SimpPlayer[]
 ) {
   const message = {
     data: {
