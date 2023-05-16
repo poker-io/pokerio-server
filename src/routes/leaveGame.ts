@@ -39,7 +39,7 @@ router.get(
         let gameMaster = await getGameMaster(gameId, client)
 
         if (gameMaster === playerToken) {
-          gameMaster = await handleGameMasterChange(
+          gameMaster = await handleGameMasterLeft(
             gameId,
             gameMaster,
             players,
@@ -99,7 +99,7 @@ async function changeGameMaster(
 // This function will handle database side of handling change of game master
 // and return new game master token if there are other players, otherwise
 // return initial game master token.
-async function handleGameMasterChange(
+async function handleGameMasterLeft(
   gameId: string,
   gameMaster: string,
   players: FirebasePlayerInfo[],
