@@ -1,5 +1,5 @@
 import { type Client } from 'pg'
-import type { FirebasePlayerInfoWithToken } from './types'
+import type { FirebasePlayerInfo } from './types'
 
 export const STARTING_FUNDS_DEFAULT = 1000
 export const SMALL_BLIND_DEFAULT = 100
@@ -35,7 +35,7 @@ export async function deletePlayer(playerToken: string, client: Client) {
 export async function getPlayersInGame(
   gameId: string,
   client: Client
-): Promise<FirebasePlayerInfoWithToken[]> {
+): Promise<FirebasePlayerInfo[]> {
   const query = 'SELECT token, nickname FROM Players WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows
 }

@@ -14,7 +14,7 @@ admin.initializeApp({
   }),
 })
 
-function isTestingEnv() {
+export function isTestingEnv() {
   return process.env.JEST_WORKER_ID !== undefined
 }
 

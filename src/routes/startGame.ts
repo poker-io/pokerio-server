@@ -5,7 +5,7 @@ import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import type {
   StartingGameInfo,
   FirebasePlayerInfoWIthCards,
-  FirebasePlayerInfoWithToken,
+  FirebasePlayerInfo,
 } from '../utils/types'
 import { shuffleArray, fullCardDeck } from '../utils/randomise'
 import sha256 from 'crypto-js/sha256'
@@ -72,7 +72,7 @@ router.get(
   }
 )
 
-function convertToInternalPlayerInfo(players: FirebasePlayerInfoWithToken[]) {
+function convertToInternalPlayerInfo(players: FirebasePlayerInfo[]) {
   const playersInGame: FirebasePlayerInfoWIthCards[] = []
   players.forEach((player) => {
     playersInGame.push({
