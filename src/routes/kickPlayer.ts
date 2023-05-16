@@ -4,8 +4,11 @@ import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import type { FirebasePlayerInfo } from '../utils/types'
 import sha256 from 'crypto-js/sha256'
-import { type Client } from 'pg'
-import { deletePlayer, getPlayersInGame } from '../utils/commonRequest'
+import {
+  deletePlayer,
+  getPlayersInGame,
+  getGameIdAndStatus,
+} from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -35,7 +38,7 @@ router.get(
     client
       .connect()
       .then(async () => {
-        const gameId = await getGameId(creatorToken, client)
+        const gameId = (await getGameIdAndStatus(creatorToken, client)).gameId
         if (gameId === null) {
           return res.sendStatus(400)
         }
@@ -64,15 +67,6 @@ router.get(
       })
   }
 )
-
-async function getGameId(
-  gameMaster: string,
-  client: Client
-): Promise<string | null> {
-  const query = 'SELECT game_id FROM Games WHERE game_master=$1'
-  const result = await client.query(query, [gameMaster])
-  return result.rowCount === 0 ? null : result.rows[0].game_id
-}
 
 function getKickedPlayerToken(
   playerHash: string,

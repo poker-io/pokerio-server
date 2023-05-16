@@ -3,7 +3,7 @@ import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import { type Client } from 'pg'
-import { getPlayersInGame } from '../utils/commonRequest'
+import { getGameIdAndStatus, getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 import type { FirebasePlayerInfo } from '../utils/types'
@@ -36,8 +36,11 @@ router.get(
     client
       .connect()
       .then(async () => {
-        const gameId = await getGameIdIfNotStarted(creatorToken, client)
-        if (gameId === null) {
+        const { gameId, started } = await getGameIdAndStatus(
+          creatorToken,
+          client
+        )
+        if (gameId === null || started) {
           return res.sendStatus(400)
         }
 
@@ -58,16 +61,6 @@ router.get(
       })
   }
 )
-
-async function getGameIdIfNotStarted(
-  gameMaster: string,
-  client: Client
-): Promise<string | null> {
-  const query =
-    'SELECT game_id FROM Games WHERE game_master=$1 AND current_player IS NULL'
-  const result = await client.query(query, [gameMaster])
-  return result.rowCount === 0 ? null : result.rows[0].game_id
-}
 
 async function updateGameSettings(
   gameId: string,

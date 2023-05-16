@@ -39,3 +39,18 @@ export async function getPlayersInGame(
   const query = 'SELECT token, nickname FROM Players WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows
 }
+
+export async function getGameIdAndStatus(
+  gameMaster: string,
+  client: Client
+): Promise<{ gameId: string | null; started: boolean }> {
+  const query = 'SELECT game_id, current_player FROM Games WHERE game_master=$1'
+  const result = await client.query(query, [gameMaster])
+  let gameId = null
+  let currentPlayer = null
+  if (result.rowCount !== 0) {
+    gameId = result.rows[0].game_id
+    currentPlayer = result.rows[0].current_player
+  }
+  return { gameId, started: currentPlayer !== null }
+}
