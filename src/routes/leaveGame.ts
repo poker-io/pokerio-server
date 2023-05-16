@@ -19,7 +19,7 @@ router.get(
   }),
   async (req, res) => {
     if (!(await verifyFCMToken(req.query.playerToken))) {
-      return res.sendStatus(400)
+      return res.sendStatus(401)
     }
 
     const client = getClient()

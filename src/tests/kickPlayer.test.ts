@@ -11,7 +11,7 @@ test('Kick player, wrong args', (done) => {
 
   request(app)
     .get('/kickPlayer?playerToken=1337'.concat('&creatorToken=1337'))
-    .expect(400)
+    .expect(401)
     .end(done)
 })
 
@@ -38,7 +38,7 @@ test('Kick player, correct arguments', async () => {
         .concat(gameMasterToken)
         .concat('&playerToken=2137')
     )
-    .expect(400)
+    .expect(402)
 
   const verifyNoPlayerQuery = 'SELECT token FROM Players WHERE token=$1'
 

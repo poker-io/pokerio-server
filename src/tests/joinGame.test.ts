@@ -26,7 +26,7 @@ test('Join game, wrong args', (doneJoin) => {
     .end(doneJoin) // Bad game id format.
   request(app)
     .get('/joinGame/?playerToken=TESTJOIN1&nickname=yellow&gameId=11')
-    .expect(401)
+    .expect(402)
     .end(doneJoin) // Game does not exist.
 })
 
@@ -103,7 +103,7 @@ test('Join game, correct arguments', async () => {
             .concat('&gameId=')
             .concat(gameId)
         )
-        .expect(401)
+        .expect(402)
     })
     .finally(async () => {
       const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'

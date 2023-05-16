@@ -22,7 +22,7 @@ router.get(
   }),
   async (req, res) => {
     if (!(await verifyFCMToken(req.query.playerToken))) {
-      return res.sendStatus(400)
+      return res.sendStatus(401)
     }
 
     const client = getClient()
@@ -40,7 +40,7 @@ router.get(
         }
 
         if (!(await isGameJoinable(gameId, client))) {
-          return res.sendStatus(401)
+          return res.sendStatus(402)
         }
 
         const gameInfo = await getGameInfo(gameId, client)

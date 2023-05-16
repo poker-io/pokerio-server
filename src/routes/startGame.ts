@@ -25,7 +25,7 @@ router.get(
   }),
   async (req, res) => {
     if (!(await verifyFCMToken(req.query.creatorToken))) {
-      return res.sendStatus(400)
+      return res.sendStatus(401)
     }
 
     const client = getClient()
@@ -46,7 +46,7 @@ router.get(
         const players = await getPlayersInGameTokens(gameId, client)
 
         if (players.length < 2) {
-          return res.sendStatus(400)
+          return res.sendStatus(402)
         }
 
         const playersInGame = convertToInternalPlayerInfo(players)

@@ -27,7 +27,7 @@ router.get(
       req.query.creatorToken === req.query.playerToken ||
       !(await verifyFCMToken(req.query.creatorToken))
     ) {
-      return res.sendStatus(400)
+      return res.sendStatus(401)
     }
 
     const client = getClient()
@@ -51,7 +51,7 @@ router.get(
           client
         )
         if (kickedPlayerToken === null) {
-          return res.sendStatus(400)
+          return res.sendStatus(402)
         }
 
         await deletePlayer(kickedPlayerToken, client)
