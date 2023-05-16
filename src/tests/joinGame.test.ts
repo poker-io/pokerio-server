@@ -1,8 +1,9 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
-import type { GameSettings } from '../utils/types'
+import type { GameLobbyData } from '../utils/types'
 import sha256 from 'crypto-js/sha256'
+import { TURN_DEFAULT } from '../utils/commonRequest'
 
 test('Join game, wrong args', (doneJoin) => {
   request(app)
@@ -50,13 +51,14 @@ test('Join game, correct arguments', async () => {
     )
     .expect(200)
 
-  const expectedInfo: GameSettings = {
+  const expectedInfo: GameLobbyData = {
     smallBlind: 60,
     startingFunds: 2137,
     players: [
       {
         nickname: gameMasterNick,
         playerHash: sha256(gameMasterToken).toString(),
+        turn: TURN_DEFAULT,
       },
     ],
     gameMasterHash: sha256(gameMasterToken).toString(),

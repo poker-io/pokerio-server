@@ -1,9 +1,10 @@
 import { type Client } from 'pg'
-import type { SimpPlayer } from './types'
+import type { FirebaseSimpPlayer } from './types'
 
 export const STARTING_FUNDS_DEFAULT = 1000
 export const SMALL_BLIND_DEFAULT = 100
 export const MAX_PLAYERS = 8
+export const TURN_DEFAULT = -1
 
 export async function createPlayer(
   playerToken: string,
@@ -34,7 +35,7 @@ export async function deletePlayer(playerToken: string, client: Client) {
 export async function getPlayersInGame(
   gameId: string,
   client: Client
-): Promise<SimpPlayer[]> {
+): Promise<FirebaseSimpPlayer[]> {
   const query = 'SELECT token, nickname FROM Players WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows
 }

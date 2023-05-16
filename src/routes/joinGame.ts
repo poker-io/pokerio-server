@@ -1,7 +1,7 @@
 import { getClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import sha256 from 'crypto-js/sha256'
-import type { GameSettings, SimpPlayer } from '../utils/types'
+import type { GameLobbyData, FirebaseSimpPlayer } from '../utils/types'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
@@ -11,6 +11,7 @@ import {
   createPlayer,
   getPlayersInGame,
   MAX_PLAYERS,
+  TURN_DEFAULT,
 } from '../utils/commonRequest'
 
 const router: Router = express.Router()
@@ -84,7 +85,7 @@ async function isGameJoinable(gameId: string, client: Client) {
 async function getGameInfo(gameId: string, client: Client) {
   const query = 'SELECT * FROM Games WHERE game_id=$1'
 
-  const gameInfo: GameSettings = {
+  const gameInfo: GameLobbyData = {
     smallBlind: 0,
     startingFunds: 0,
     players: [],
@@ -98,10 +99,10 @@ async function getGameInfo(gameId: string, client: Client) {
 }
 
 async function completeInfoAndNotifyPlayers(
-  gameInfo: GameSettings,
+  gameInfo: GameLobbyData,
   nickname: string,
   playerToken: string,
-  players: SimpPlayer[]
+  players: FirebaseSimpPlayer[]
 ) {
   const message = {
     data: {
@@ -116,6 +117,7 @@ async function completeInfoAndNotifyPlayers(
     gameInfo.players.push({
       nickname: player.nickname,
       playerHash: sha256(player.token).toString(),
+      turn: TURN_DEFAULT,
     })
     message.token = player.token
     await sendFirebaseMessage(message)

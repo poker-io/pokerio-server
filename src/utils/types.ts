@@ -1,23 +1,25 @@
-export interface PlayerInfo {
+export interface FirebasePlayerInfo {
   nickname: string
-  playerHash: string
-}
-
-export interface InternalPlayerInfo {
-  token: string
-  card1: string
-  card2: string
-}
-
-export interface PlayerGameInfo {
   playerHash: string
   turn: number
 }
 
-export interface GameSettings {
+export interface FirebaseSimpPlayer {
+  nickname: string
+  token: string
+}
+
+export interface StartGamePlayer {
+  token: string
+  nickname: string
+  card1: string
+  card2: string
+}
+
+export interface GameLobbyData {
   smallBlind: number
   startingFunds: number
-  players: PlayerInfo[]
+  players: FirebasePlayerInfo[]
   gameMasterHash: string
 }
 
@@ -28,11 +30,6 @@ export interface NewGameInfo {
 }
 
 export interface StartingGameInfo {
-  players: PlayerGameInfo[]
+  players: FirebasePlayerInfo[]
   cards: string[]
-}
-
-export interface SimpPlayer {
-  nickname: string
-  token: string
 }

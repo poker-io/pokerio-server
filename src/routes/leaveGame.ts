@@ -7,7 +7,7 @@ import { type Client } from 'pg'
 import { deletePlayer, getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
-import type { SimpPlayer } from '../utils/types'
+import type { FirebaseSimpPlayer } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -102,7 +102,7 @@ async function changeGameMaster(
 async function handleGameMasterChange(
   gameId: string,
   gameMaster: string,
-  players: SimpPlayer[],
+  players: FirebaseSimpPlayer[],
   client: Client
 ) {
   let newGameMaster = gameMaster
@@ -121,7 +121,7 @@ async function handleGameMasterChange(
 async function notifyPlayers(
   playerToken: string,
   gameMaster: string,
-  players: SimpPlayer[]
+  players: FirebaseSimpPlayer[]
 ) {
   const message = {
     data: {

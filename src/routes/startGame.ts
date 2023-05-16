@@ -4,8 +4,8 @@ import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import type {
   StartingGameInfo,
-  InternalPlayerInfo,
-  SimpPlayer,
+  StartGamePlayer,
+  FirebaseSimpPlayer,
 } from '../utils/types'
 import { shuffleArray, fullCardDeck } from '../utils/randomise'
 import sha256 from 'crypto-js/sha256'
@@ -72,11 +72,12 @@ router.get(
   }
 )
 
-function convertToInternalPlayerInfo(players: SimpPlayer[]) {
-  const playersInGame: InternalPlayerInfo[] = []
+function convertToInternalPlayerInfo(players: FirebaseSimpPlayer[]) {
+  const playersInGame: StartGamePlayer[] = []
   players.forEach((player) => {
     playersInGame.push({
       token: player.token,
+      nickname: player.nickname,
       card1: '',
       card2: '',
     })
@@ -99,10 +100,7 @@ async function getGameInfoIfNotStarted(
   return gameInfo
 }
 
-function createStartedGameInfo(
-  players: InternalPlayerInfo[],
-  cardDeck: string[]
-) {
+function createStartedGameInfo(players: StartGamePlayer[], cardDeck: string[]) {
   const gameInfo: StartingGameInfo = {
     players: [],
     cards: [],
@@ -112,6 +110,7 @@ function createStartedGameInfo(
   for (let i = 0; i < players.length; i++) {
     gameInfo.players.push({
       playerHash: sha256(players[i].token).toString(),
+      nickname: players[i].nickname,
       turn: i + 1,
     })
     players[i].card1 = cardDeck.pop() as string
@@ -145,7 +144,7 @@ async function updateGameState(
 }
 
 async function updatePlyersStates(
-  players: InternalPlayerInfo[],
+  players: StartGamePlayer[],
   startingFunds: string,
   gameInfo: StartingGameInfo,
   client: Client
@@ -163,7 +162,7 @@ async function updatePlyersStates(
 }
 
 async function notifyPlayers(
-  players: InternalPlayerInfo[],
+  players: StartGamePlayer[],
   gameInfo: StartingGameInfo
 ) {
   const message = {

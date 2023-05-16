@@ -6,7 +6,7 @@ import { type Client } from 'pg'
 import { getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
-import type { SimpPlayer } from '../utils/types'
+import type { FirebaseSimpPlayer } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -84,7 +84,7 @@ async function updateGameSettings(
 async function notifyPlayers(
   startingFunds: string,
   smallBlind: string,
-  players: SimpPlayer[]
+  players: FirebaseSimpPlayer[]
 ) {
   const message = {
     data: {
