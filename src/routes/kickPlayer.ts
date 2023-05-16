@@ -2,7 +2,7 @@ import { getClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
-import type { FirebaseSimpPlayer } from '../utils/types'
+import type { FirebasePlayerInfoWithToken } from '../utils/types'
 import sha256 from 'crypto-js/sha256'
 import { type Client } from 'pg'
 import { deletePlayer, getPlayersInGame } from '../utils/commonRequest'
@@ -76,7 +76,7 @@ async function getGameId(
 
 function getKickedPlayerToken(
   playerHash: string,
-  players: FirebaseSimpPlayer[]
+  players: FirebasePlayerInfoWithToken[]
 ): string | null {
   let token: string | null = null
   players.forEach((player) => {
@@ -89,7 +89,7 @@ function getKickedPlayerToken(
 
 async function notifyPlayers(
   playerHash: string,
-  players: FirebaseSimpPlayer[]
+  players: FirebasePlayerInfoWithToken[]
 ) {
   const message = {
     data: {

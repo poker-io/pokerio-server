@@ -4,12 +4,12 @@ export interface FirebasePlayerInfo {
   turn: number
 }
 
-export interface FirebaseSimpPlayer {
+export interface FirebasePlayerInfoWithToken {
   nickname: string
   token: string
 }
 
-export interface StartGamePlayer {
+export interface FirebasePlayerInfoWIthCards {
   token: string
   nickname: string
   card1: string
