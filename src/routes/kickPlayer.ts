@@ -24,10 +24,10 @@ router.get(
     }),
   }),
   async (req, res) => {
-    if (
-      req.query.creatorToken === req.query.playerToken ||
-      !(await verifyFCMToken(req.query.creatorToken))
-    ) {
+    const creatorToken = req.query.creatorToken as string
+    const playerToken = req.query.playerToken as string
+
+    if (creatorToken === playerToken || !(await verifyFCMToken(creatorToken))) {
       return res.sendStatus(401)
     }
 
@@ -35,10 +35,6 @@ router.get(
     client
       .connect()
       .then(async () => {
-        // We already know that all request values are defined
-        const creatorToken = req.query.creatorToken as string
-        const playerToken = req.query.playerToken as string
-
         const gameId = await getGameId(creatorToken, client)
         if (gameId === null) {
           return res.sendStatus(400)

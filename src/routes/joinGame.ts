@@ -25,7 +25,11 @@ router.get(
     }),
   }),
   async (req, res) => {
-    if (!(await verifyFCMToken(req.query.playerToken))) {
+    const playerToken = req.query.playerToken as string
+    const nickname = req.query.nickname as string
+    const gameId = req.query.gameId as string
+
+    if (!(await verifyFCMToken(playerToken))) {
       return res.sendStatus(401)
     }
 
@@ -34,11 +38,6 @@ router.get(
     client
       .connect()
       .then(async () => {
-        // We already know that all request values are defined
-        const playerToken = req.query.playerToken as string
-        const nickname = req.query.nickname as string
-        const gameId = req.query.gameId as string
-
         if (await isPlayerInGame(playerToken, client)) {
           return res.sendStatus(400)
         }

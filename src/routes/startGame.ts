@@ -28,7 +28,9 @@ router.get(
     }),
   }),
   async (req, res) => {
-    if (!(await verifyFCMToken(req.query.creatorToken))) {
+    const creatorToken = req.query.creatorToken as string
+
+    if (!(await verifyFCMToken(creatorToken))) {
       return res.sendStatus(401)
     }
 
@@ -36,9 +38,6 @@ router.get(
     client
       .connect()
       .then(async () => {
-        // We already know that the request value is defined
-        const creatorToken = req.query.creatorToken as string
-
         const { gameId, startingFunds } = await getGameInfoIfNotStarted(
           creatorToken,
           client

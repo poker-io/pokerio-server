@@ -24,7 +24,11 @@ router.get(
     }),
   }),
   async (req, res) => {
-    if (!(await verifyFCMToken(req.query.creatorToken))) {
+    const creatorToken = req.query.creatorToken as string
+    const smallBlind = req.query.smallBlind as string
+    const startingFunds = req.query.startingFunds as string
+
+    if (!(await verifyFCMToken(creatorToken))) {
       return res.sendStatus(401)
     }
 
@@ -32,11 +36,6 @@ router.get(
     client
       .connect()
       .then(async () => {
-        // We already know that all request values are defined
-        const creatorToken = req.query.creatorToken as string
-        const smallBlind = req.query.smallBlind as string
-        const startingFunds = req.query.startingFunds as string
-
         const gameId = await getGameIdIfNotStarted(creatorToken, client)
         if (gameId === null) {
           return res.sendStatus(400)
