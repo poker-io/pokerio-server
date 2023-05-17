@@ -51,7 +51,7 @@ router.get(
         }
 
         await deletePlayer(playerToken, client)
-        await notifyPlayers(gameId, gameMaster, players)
+        await notifyPlayers(playerToken, gameMaster, players)
 
         // TODO: Fix game state
 
