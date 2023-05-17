@@ -82,8 +82,8 @@ async function notifyPlayers(
   const message = {
     data: {
       type: 'settingsUpdated',
-      startingFunds,
-      smallBlind,
+      startingFunds: startingFunds.toString(),
+      smallBlind: smallBlind.toString(),
     },
     token: '',
   }
