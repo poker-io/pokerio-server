@@ -20,7 +20,7 @@ jobs:
         env:
           USER: ${{ secrets.DB_USERNAME }}
           PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DATABASE: ${{ secrets.DB_NAME }}
+          DATABASE: ${{ secrets.DB_DATABASE }}
         run: |
           echo "export const user = '$USER';export const password = '$PASSWORD';export const database = '$DATABASE'" > src/secrets.ts
 
