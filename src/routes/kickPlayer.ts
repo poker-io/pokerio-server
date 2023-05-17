@@ -2,7 +2,13 @@ import { getClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
+import type { FirebasePlayerInfo } from '../utils/types'
 import sha256 from 'crypto-js/sha256'
+import {
+  deletePlayer,
+  getPlayersInGame,
+  getGameIdAndStatus,
+} from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -21,62 +27,32 @@ router.get(
     }),
   }),
   async (req, res) => {
-    if (
-      req.query.creatorToken === req.query.playerToken ||
-      !(await verifyFCMToken(req.query.creatorToken))
-    ) {
-      return res.sendStatus(400)
+    const creatorToken = req.query.creatorToken as string
+    const playerToken = req.query.playerToken as string
+
+    if (creatorToken === playerToken || !(await verifyFCMToken(creatorToken))) {
+      return res.sendStatus(401)
     }
 
     const client = getClient()
     client
       .connect()
       .then(async () => {
-        // Define queries
-        const getGameQuery = 'SELECT game_id FROM Games WHERE game_master=$1'
-        const getPlayersQuery = 'SELECT token FROM Players WHERE game_id=$1'
-        const deletePlayerQuery = 'DELETE FROM Players WHERE token=$1'
-
-        // Check if game exists
-        const getGameResult = await client.query(getGameQuery, [
-          req.query.creatorToken,
-        ])
-
-        if (getGameResult.rowCount === 0) {
-          return res.sendStatus(400)
-        }
-        const gameId = getGameResult.rows[0].game_id
-
-        // Verify player is in game and kick
-        const getPlayersResult = await client.query(getPlayersQuery, [gameId])
-        let playerInGame = false
-        let kickedPlayerToken = ''
-
-        getPlayersResult.rows.forEach((row) => {
-          if (sha256(row.token).toString() === req.query.playerToken) {
-            playerInGame = true
-            kickedPlayerToken = row.token
-          }
-        })
-
-        if (!playerInGame) {
+        const gameId = (await getGameIdAndStatus(creatorToken, client)).gameId
+        if (gameId === null) {
           return res.sendStatus(400)
         }
 
-        await client.query(deletePlayerQuery, [kickedPlayerToken])
+        const players = await getPlayersInGame(gameId, client)
 
-        // Notify players about the changes
-        const message = {
-          data: {
-            type: 'playerKicked',
-            playerHash: req.query.playerToken as string,
-          },
-          token: '',
+        const kickedPlayerToken = getKickedPlayerToken(playerToken, players)
+        if (kickedPlayerToken === null) {
+          return res.sendStatus(402)
         }
-        getPlayersResult.rows.forEach(async (row) => {
-          message.token = row.token
-          await sendFirebaseMessage(message)
-        })
+
+        await deletePlayer(kickedPlayerToken, client)
+
+        await notifyPlayers(playerToken, players)
 
         // TODO: Fix game state
 
@@ -91,5 +67,36 @@ router.get(
       })
   }
 )
+
+function getKickedPlayerToken(
+  playerHash: string,
+  players: FirebasePlayerInfo[]
+): string | null {
+  let token: string | null = null
+  players.forEach((player) => {
+    if (sha256(player.token).toString() === playerHash) {
+      token = player.token
+    }
+  })
+  return token
+}
+
+async function notifyPlayers(
+  playerHash: string,
+  players: FirebasePlayerInfo[]
+) {
+  const message = {
+    data: {
+      type: 'playerKicked',
+      playerHash,
+    },
+    token: '',
+  }
+
+  players.forEach(async (player) => {
+    message.token = player.token
+    await sendFirebaseMessage(message)
+  })
+}
 
 export default router

@@ -1,7 +1,7 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
-import { type NewGameInfo } from '../app'
+import type { NewGameInfo } from '../utils/types'
 
 test('Leave game, wrong args', (doneLeave) => {
   const gameMasterToken = 'TESTLEAVE_INCORRECT'
@@ -33,7 +33,7 @@ test('Leave game, correct arguments', async () => {
     )
     .expect(200)
 
-  const key = (res.body as NewGameInfo).gameKey
+  const key = (res.body as NewGameInfo).gameId
   await request(app)
     .get(
       `/joinGame?playerToken=${playerToken}&nickname=${playerNick}&gameId=${key}`

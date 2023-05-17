@@ -3,8 +3,11 @@ import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import sha256 from 'crypto-js/sha256'
+import { type Client } from 'pg'
+import { deletePlayer, getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
+import type { FirebasePlayerInfo } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -16,72 +19,39 @@ router.get(
     }),
   }),
   async (req, res) => {
-    if (!(await verifyFCMToken(req.query.playerToken))) {
-      return res.sendStatus(400)
+    const playerToken = req.query.playerToken as string
+
+    if (!(await verifyFCMToken(playerToken))) {
+      return res.sendStatus(401)
     }
 
     const client = getClient()
     client
       .connect()
       .then(async () => {
-        // Define queries
-        const getGameIdQuery = 'SELECT game_id FROM Players WHERE token=$1'
-        const getGameMasterQuery =
-          'SELECT game_master FROM Games WHERE game_id=$1'
-        const updateGameMasterQuery =
-          'UPDATE Games SET game_master=$1 WHERE game_id=$2'
-        const removePlayerQuery = 'DELETE FROM Players WHERE token=$1'
-        const getPlayerTokensQuery =
-          'SELECT token FROM Players WHERE game_id=$1'
-        const deleteGameQuery = 'DELETE FROM Games WHERE game_id=$1'
-
-        // Check if the player is in the database
-        const getGameIdResult = await client.query(getGameIdQuery, [
-          req.query.playerToken,
-        ])
-        if (getGameIdResult.rowCount === 0) {
+        const gameId = await getGameId(playerToken, client)
+        if (gameId === null) {
           return res.sendStatus(400)
         }
-        const gameId = getGameIdResult.rows[0].game_id
 
-        const playersResult = await client.query(getPlayerTokensQuery, [gameId])
+        const players = await getPlayersInGame(gameId, client)
 
-        // Check if player is game master
-        const gameMasterResult = await client.query(getGameMasterQuery, [
-          gameId,
-        ])
-        let gameMaster = gameMasterResult.rows[0].game_master
-        if (gameMaster === req.query.playerToken) {
-          // If game master is last in game
-          if (playersResult.rowCount === 1) {
-            await client.query(deleteGameQuery, [gameId])
-            await client.query(removePlayerQuery, [req.query.playerToken])
+        let gameMaster = await getGameMaster(gameId, client)
 
+        if (gameMaster === playerToken) {
+          gameMaster = await handleGameMasterLeft(
+            gameId,
+            gameMaster,
+            players,
+            client
+          )
+          if (gameMaster === playerToken) {
             return res.sendStatus(200)
-          } else {
-            for (let i = 0; gameMaster === req.query.playerToken; i++) {
-              gameMaster = playersResult.rows[i].token
-            }
-
-            await client.query(updateGameMasterQuery, [gameMaster, gameId])
           }
         }
-        await client.query(removePlayerQuery, [req.query.playerToken])
 
-        // Notify players about the changes
-        const message = {
-          data: {
-            type: 'playerLeft',
-            playerHash: sha256(req.query.playerToken).toString(),
-            gameMaster: sha256(gameMaster).toString(),
-          },
-          token: '',
-        }
-
-        playersResult.rows.forEach(async (row) => {
-          message.token = row.token
-          await sendFirebaseMessage(message)
-        })
+        await deletePlayer(playerToken, client)
+        await notifyPlayers(gameId, gameMaster, players)
 
         // TODO: Fix game state
 
@@ -96,5 +66,76 @@ router.get(
       })
   }
 )
+
+async function getGameId(
+  playerToken: string,
+  client: Client
+): Promise<string | null> {
+  const query = 'SELECT game_id FROM Players WHERE token=$1'
+  const result = await client.query(query, [playerToken])
+  return result.rowCount === 0 ? null : result.rows[0].game_id
+}
+
+async function getGameMaster(gameId: string, client: Client): Promise<string> {
+  const query = 'SELECT game_master FROM Games WHERE game_id=$1'
+  return (await client.query(query, [gameId])).rows[0].game_master
+}
+
+async function deleteGame(gameId: string, client: Client) {
+  const query = 'DELETE FROM Games WHERE game_id=$1'
+  await client.query(query, [gameId])
+}
+
+async function changeGameMaster(
+  gameId: string,
+  newGameMaster: string,
+  client: Client
+) {
+  const query = 'UPDATE Games SET game_master=$1 WHERE game_id=$2'
+  const values = [newGameMaster, gameId]
+  await client.query(query, values)
+}
+
+// This function will handle database side of handling change of game master
+// and return new game master token if there are other players, otherwise
+// return initial game master token.
+async function handleGameMasterLeft(
+  gameId: string,
+  gameMaster: string,
+  players: FirebasePlayerInfo[],
+  client: Client
+) {
+  let newGameMaster = gameMaster
+  if (players.length === 1) {
+    await deleteGame(gameId, client)
+    await deletePlayer(gameMaster, client)
+  } else {
+    for (let i = 0; newGameMaster === gameMaster; i++) {
+      newGameMaster = players[i].token
+    }
+    await changeGameMaster(gameId, newGameMaster, client)
+  }
+  return newGameMaster
+}
+
+async function notifyPlayers(
+  playerToken: string,
+  gameMaster: string,
+  players: FirebasePlayerInfo[]
+) {
+  const message = {
+    data: {
+      type: 'playerLeft',
+      playerHash: sha256(playerToken).toString(),
+      gameMaster: sha256(gameMaster).toString(),
+    },
+    token: '',
+  }
+
+  players.forEach(async (player) => {
+    message.token = player.token
+    await sendFirebaseMessage(message)
+  })
+}
 
 export default router

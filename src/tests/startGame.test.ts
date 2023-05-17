@@ -29,7 +29,7 @@ test('Start game, wrong args', async () => {
       // Not enough players.
       await request(app)
         .get(`/startGame?creatorToken=${gameMasterToken}`)
-        .expect(400)
+        .expect(402)
     })
     .finally(async () => {
       await client.query(deleteGameQuery, [gameMasterToken])

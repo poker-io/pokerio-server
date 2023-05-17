@@ -38,31 +38,62 @@ test('Create game, wrong args', (done) => {
     .end(done)
 })
 
-test('Create game, good args, good player', async () => {
-  const imposibleFirbaseToken = 'TEST'
-  const nick = 'NICK'
+test('Create game, player already exists', async () => {
+  const gameMasterToken = 'TESTCREATE'
+  const gameMasterNick = 'NICKCREATE'
   const client = getClient()
   await client.connect()
 
   await request(app)
     .get(
       '/createGame/?creatorToken='
-        .concat(imposibleFirbaseToken)
+        .concat(gameMasterToken)
+        .concat('&nickname=')
+        .concat(gameMasterNick)
+    )
+    .expect(200)
+  await request(app)
+    .get(
+      '/createGame/?creatorToken='
+        .concat(gameMasterToken)
+        .concat('&nickname=')
+        .concat(gameMasterNick)
+    )
+    .expect(400)
+  const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
+  await client.query(deleteGameQuery, [gameMasterToken]).catch((err) => {
+    console.log(err.stack)
+  })
+  const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
+  await client.query(deletePlayerQuery, [gameMasterToken]).catch((err) => {
+    console.log(err.stack)
+  })
+  await client.end()
+})
+
+test('Create game, good args, good player', async () => {
+  const gameMasterToken = 'TESTCREATE'
+  const nick = 'NICKCREATE'
+  const client = getClient()
+  await client.connect()
+
+  await request(app)
+    .get(
+      '/createGame/?creatorToken='
+        .concat(gameMasterToken)
         .concat('&nickname=')
         .concat(nick)
     )
     .expect(200)
 
   const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
-  await client.query(deleteGameQuery, [imposibleFirbaseToken]).catch((err) => {
+  await client.query(deleteGameQuery, [gameMasterToken]).catch((err) => {
     console.log(err.stack)
   })
   const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
-  await client
-    .query(deletePlayerQuery, [imposibleFirbaseToken])
-    .catch((err) => {
-      console.log(err.stack)
-    })
+  await client.query(deletePlayerQuery, [gameMasterToken]).catch((err) => {
+    console.log(err.stack)
+  })
 
   await client.end()
 })

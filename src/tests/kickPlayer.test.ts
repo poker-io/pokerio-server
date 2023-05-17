@@ -2,7 +2,7 @@ import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
 import sha256 from 'crypto-js/sha256'
-import { type NewGameInfo } from '../app'
+import type { NewGameInfo } from '../utils/types'
 
 test('Kick player, wrong args', (done) => {
   request(app).get('/kickPlayer').expect(400).end(done)
@@ -11,7 +11,7 @@ test('Kick player, wrong args', (done) => {
 
   request(app)
     .get('/kickPlayer?playerToken=1337'.concat('&creatorToken=1337'))
-    .expect(400)
+    .expect(401)
     .end(done)
 })
 
@@ -29,7 +29,7 @@ test('Kick player, correct arguments', async () => {
         .concat(gameMasterNick)
     )
     .expect(200)
-  const gameId = (res.body as NewGameInfo).gameKey
+  const gameId = (res.body as NewGameInfo).gameId
 
   // Creator exists, but the player does not
   await request(app)
@@ -38,7 +38,7 @@ test('Kick player, correct arguments', async () => {
         .concat(gameMasterToken)
         .concat('&playerToken=2137')
     )
-    .expect(400)
+    .expect(402)
 
   const verifyNoPlayerQuery = 'SELECT token FROM Players WHERE token=$1'
 
