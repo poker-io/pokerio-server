@@ -20,8 +20,9 @@ jobs:
         env:
           USER: ${{ secrets.DB_USERNAME }}
           PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DATABASE: ${{ secrets.DB_NAME }}
         run: |
-          echo "export const user = '$USER';export const password = '$PASSWORD';" > src/secrets.ts
+          echo "export const user = '$USER';export const password = '$PASSWORD';export const database = '$DATABASE'" > src/secrets.ts
 
       - name: Setup SSH tunnel
         env:
