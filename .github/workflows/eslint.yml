@@ -15,7 +15,7 @@ jobs:
           node-version: 18
       - name: Setup secrets
         run: |
-          echo "export const user = '';export const password = '';" > src/secrets.ts
+          echo "export const user = '';export const password = '';export const database = '';" > src/secrets.ts
       - run: yarn install
       - uses: sibiraj-s/action-eslint@v2
         with:

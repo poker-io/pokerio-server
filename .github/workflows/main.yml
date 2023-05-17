@@ -18,7 +18,7 @@ jobs:
 
       - name: Setup secrets
         run: |
-          echo "export const user = '';export const password = '';" > src/secrets.ts
+          echo "export const user = '';export const password = '';export const database = '';" > src/secrets.ts
 
       - name: Add firebase service account json file
         env:

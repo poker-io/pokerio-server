@@ -54,7 +54,9 @@
       "src/tests/*",
       "src/serviceAccount.json"
     ],
-    "preset": "ts-jest"
+    "preset": "ts-jest",
+    "globalTeardown": "<rootDir>/src/tests/teardown.ts",
+    "globalSetup": "<rootDir>/src/tests/setup.ts"
   },
   "lint-staged": {
     "*.(js|ts|tsx)": [

@@ -24,6 +24,7 @@ It should be similar to this:
 ```ts
 export const user = 'pokerio-user'
 export const password = 'pokerio-password'
+export const database = 'pokerio-database'
 ```
 
 ## Running

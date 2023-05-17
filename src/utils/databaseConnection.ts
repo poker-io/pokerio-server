@@ -1,5 +1,5 @@
 import pg from 'pg'
-import { user, password } from '../secrets'
+import { user, password, database } from '../secrets'
 // pg is a CommonJS module, so we have to do it this way for the import to work
 export const { Client } = pg
 
@@ -7,7 +7,7 @@ export function getClient(): pg.Client {
   return new Client({
     user,
     password,
-    database: 'pokerio',
+    database,
     port: 5432,
     host: 'localhost',
   })
