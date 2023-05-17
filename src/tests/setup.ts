@@ -1,6 +1,6 @@
 import { databaseInit } from '../utils/databaseConnection'
 
-module.exports = async function teardown() {
+export default async function setup() {
   await databaseInit()
-  console.log('Test setup complete')
+  console.log('\nTest setup complete')
 }

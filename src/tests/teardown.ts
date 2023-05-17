@@ -1,6 +1,6 @@
 import { getClient } from '../utils/databaseConnection'
 
-module.exports = async function teardown() {
+export default async function teardown() {
   const client = getClient()
   client
     .connect()
