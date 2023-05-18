@@ -31,7 +31,8 @@ export async function databaseInit(): Promise<void> {
           card1 VARCHAR(3),
           card2 VARCHAR(3),
           funds BIGINT,
-          bet BIGINT
+          bet BIGINT,
+          last_action VARCHAR(10)
         )`
     )
 

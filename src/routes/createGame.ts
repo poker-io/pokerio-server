@@ -4,7 +4,7 @@ import { verifyFCMToken } from '../utils/firebase'
 import {
   STARTING_FUNDS_DEFAULT,
   SMALL_BLIND_DEFAULT,
-  isPlayerInGame,
+  isPlayerInAnyGame,
   createPlayer,
 } from '../utils/commonRequest'
 import type { NewGameInfo } from '../utils/types'
@@ -48,7 +48,7 @@ router.get(
     client
       .connect()
       .then(async () => {
-        if (await isPlayerInGame(creatorToken, client)) {
+        if (await isPlayerInAnyGame(creatorToken, client)) {
           return res.sendStatus(400)
         }
 
