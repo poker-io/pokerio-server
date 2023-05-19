@@ -64,7 +64,7 @@ export async function getPlayerState(playerToken: string, client: Client) {
   await client.query(query, [playerToken])
 }
 
-export async function setNewTurn(
+export async function setNewCurrentPlayer(
   oldPlayerToken: string,
   gameId: string,
   client: Client
@@ -89,6 +89,37 @@ export async function setNewTurn(
     await client.query(getNewCurrentPlayer, [gameId, newTurn])
   ).rows[0].token
   await client.query(setNewCurrentPlayer, [newPlayer, gameId])
+
+  return newPlayer
+}
+
+export async function changeGameRoundIfNeeded(
+  gameId: string,
+  currentPlayerToken: string,
+  client: Client
+): Promise<boolean> {
+  // The next round commences only if there is one player, the current player, whose last_action='raised'
+  const shouldProceedNextRound =
+    'SELECT 1 FROM Players WHERE player_token=$1 AND EXISTS (SELECT COUNT(*) FROM Players WHERE game_id=$2 AND last_action=$3)'
+  const updateGameRound = 'UPDATE Games SET game_round=game_round + 1'
+  const setFirstPlayer =
+    'UPDATE Games SET current_player=(SELECT player_token WHERE turn=2)'
+  if (
+    (
+      await client.query(shouldProceedNextRound, [
+        currentPlayerToken,
+        gameId,
+        'raised',
+      ])
+    ).rowCount !== 0
+  ) {
+    await client.query(updateGameRound)
+    await client.query(setFirstPlayer)
+    // todo count cards and set winner
+    return true
+  } else {
+    return false
+  }
 }
 
 export async function getPlayersInGame(

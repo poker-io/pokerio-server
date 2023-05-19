@@ -1,13 +1,17 @@
 import { getClient } from '../../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
-import { verifyFCMToken } from '../../utils/firebase'
+import {
+  sendFirebaseMessageToEveryone,
+  verifyFCMToken,
+} from '../../utils/firebase'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../../utils/rateLimiter'
 import {
   isPlayerInGame,
   isPlayersTurn,
   setPlayerState,
-  setNewTurn,
+  setNewCurrentPlayer,
+  changeGameRoundIfNeeded,
 } from '../../utils/commonRequest'
 
 const router: Router = express.Router()
@@ -42,10 +46,21 @@ router.get(
           return res.sendStatus(401)
         }
 
-        await setNewTurn(playerToken, gameId, client)
+        const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
+        await changeGameRoundIfNeeded(gameId, newPlayer, client)
         await setPlayerState(playerToken, client, 'folded')
 
-        // todo let other players through firebase know
+        const message = {
+          data: {
+            player: playerToken,
+            type: 'fold',
+            actionPayLoad: '',
+          },
+          token: '',
+        }
+
+        await sendFirebaseMessageToEveryone(message, gameId, client)
+
         res.send(200)
       })
       .catch((err) => {
