@@ -55,7 +55,7 @@ export async function setPlayerState(
   client: Client,
   state: string
 ) {
-  const query = 'UPDATE Players SET last_action=$1 WHERE playerToken=$2'
+  const query = 'UPDATE Players SET last_action=$1 WHERE token=$2'
   await client.query(query, [state, playerToken])
 }
 
@@ -70,15 +70,16 @@ export async function setNewCurrentPlayer(
   client: Client
 ) {
   const getOldPlayerTurn = 'SELECT turn FROM Players WHERE token=$1'
-  const getPlayerCount = 'SELECT COUNT(token) FROM Players WHERE game_id=$1'
+  const getPlayerCount =
+    'SELECT COUNT(*) as player_count FROM Players WHERE game_id=$1'
   const getNewCurrentPlayer =
-    'SELECT token FROM Player WHERE game_id=$1 AND turn=$2'
+    'SELECT token FROM Players WHERE game_id=$1 AND turn=$2'
   const setNewCurrentPlayer =
     'UPDATE Games SET current_player=$1 WHERE game_id=$2'
 
   const playerCount = await (
     await client.query(getPlayerCount, [gameId])
-  ).rows[0].token
+  ).rows[0].player_count
   const newTurn =
     (((await (
       await client.query(getOldPlayerTurn, [oldPlayerToken])
@@ -98,24 +99,30 @@ export async function changeGameRoundIfNeeded(
   currentPlayerToken: string,
   client: Client
 ): Promise<boolean> {
-  // The next round commences only if there is one player, the current player, whose last_action='raised'
-  const shouldProceedNextRound =
-    'SELECT 1 FROM Players WHERE player_token=$1 AND EXISTS (SELECT COUNT(*) FROM Players WHERE game_id=$2 AND last_action=$3)'
-  const updateGameRound = 'UPDATE Games SET game_round=game_round + 1'
+  // The next round commences only if there is one active player OR when current player was the last raiser
+  const shouldProceedNextRound = `SELECT 1 FROM Players A WHERE 
+    (A.token=$1 AND A.last_action=$2 AND 1 = 
+        (SELECT COUNT(*) FROM Players B WHERE B.last_action=$2)) OR 
+            (SELECT COUNT(*) FROM Players C WHERE (C.last_action=$3 
+            OR (C.bet=0 AND C.funds=0))) = $4`
+  const playerCount = (await getPlayersInGame(gameId, client)).length
+  const updateGameRound =
+    'UPDATE Games SET game_round=game_round + 1 WHERE game_id=$1'
   const setFirstPlayer =
-    'UPDATE Games SET current_player=(SELECT player_token WHERE turn=2)'
+    'UPDATE Games SET current_player=(SELECT token FROM Players WHERE turn=0 AND game_id=$1) WHERE game_id=$1'
   if (
     (
       await client.query(shouldProceedNextRound, [
         currentPlayerToken,
-        gameId,
         'raised',
+        'folded',
+        playerCount - 1,
       ])
     ).rowCount !== 0
   ) {
-    await client.query(updateGameRound)
-    await client.query(setFirstPlayer)
-    // todo count cards and set winner
+    await client.query(updateGameRound, [gameId])
+    await client.query(setFirstPlayer, [gameId])
+    // todo count cards and set winners
     return true
   } else {
     return false
@@ -126,7 +133,8 @@ export async function getPlayersInGame(
   gameId: string,
   client: Client
 ): Promise<FirebasePlayerInfo[]> {
-  const query = 'SELECT token, nickname FROM Players WHERE game_id=$1'
+  const query =
+    'SELECT token, nickname FROM Players WHERE game_id=$1 ORDER BY turn ASC'
   return (await client.query(query, [gameId])).rows
 }
 
@@ -143,4 +151,14 @@ export async function getGameIdAndStatus(
     currentPlayer = result.rows[0].current_player
   }
   return { gameId, started: currentPlayer !== null }
+}
+
+export async function getSmallBlind(
+  gameId: string,
+  playerSize: number,
+  client: Client
+): Promise<string> {
+  const getSmallBlind = 'SELECT token FROM Players WHERE game_id=$1 AND turn=$2'
+  return (await client.query(getSmallBlind, [gameId, playerSize - 1])).rows[0]
+    .token
 }

@@ -43,12 +43,12 @@ router.get(
         }
 
         if (!(await isPlayersTurn(playerToken, gameId, client))) {
-          return res.sendStatus(401)
+          return res.sendStatus(402)
         }
 
         const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
-        await changeGameRoundIfNeeded(gameId, newPlayer, client)
         await setPlayerState(playerToken, client, 'folded')
+        await changeGameRoundIfNeeded(gameId, newPlayer, client)
 
         const message = {
           data: {

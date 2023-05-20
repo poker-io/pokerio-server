@@ -7,6 +7,7 @@ import createGame from './routes/createGame'
 import modifyGame from './routes/modifyGame'
 import leaveGame from './routes/leaveGame'
 import startGame from './routes/startGame'
+import fold from './routes/gameplay/fold'
 import { rateLimiter } from './utils/rateLimiter'
 
 export const app = express()
@@ -38,5 +39,7 @@ app.use(kickPlayer)
 app.use(leaveGame)
 
 app.use(startGame)
+
+app.use(fold)
 
 app.use(errorHandling)

@@ -10,7 +10,7 @@ import type {
 import { shuffleArray, fullCardDeck } from '../utils/randomise'
 import sha256 from 'crypto-js/sha256'
 import { type Client } from 'pg'
-import { getPlayersInGame } from '../utils/commonRequest'
+import { getPlayersInGame, getSmallBlind } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -58,9 +58,16 @@ router.get(
 
         const gameInfo = createStartedGameInfo(playersInGame, cardDeck)
 
-        await updateGameState(playersInGame[0].token, gameId, gameInfo, client)
-
         await updatePlyersStates(playersInGame, startingFunds, gameInfo, client)
+
+        const smallBlind = await getSmallBlind(gameId, players.length, client)
+        await updateGameState(
+          playersInGame[0].token,
+          gameId,
+          gameInfo,
+          client,
+          smallBlind
+        )
 
         await notifyPlayers(playersInGame, gameInfo)
 
@@ -114,7 +121,7 @@ function createStartedGameInfo(
     gameInfo.players.push({
       playerHash: sha256(players[i].token).toString(),
       nickname: players[i].nickname,
-      turn: i + 1,
+      turn: i,
     })
     players[i].card1 = cardDeck.pop() as string
     players[i].card2 = cardDeck.pop() as string
@@ -130,19 +137,14 @@ async function updateGameState(
   firstPlayerToken: string,
   gameId: string,
   gameInfo: StartingGameInfo,
-  client: Client
+  client: Client,
+  smallBlind: string
 ) {
   const query = `UPDATE Games SET current_player=$1, small_blind_who=$2, 
     game_round=$3, current_table_value=$4, 
     card1=$5, card2=$6, card3=$7, card4=$8, card5=$9 WHERE game_id=$10`
-  const values = [
-    firstPlayerToken,
-    firstPlayerToken,
-    1,
-    0,
-    ...gameInfo.cards,
-    gameId,
-  ]
+
+  const values = [firstPlayerToken, smallBlind, 1, 0, ...gameInfo.cards, gameId]
   await client.query(query, values)
 }
 
