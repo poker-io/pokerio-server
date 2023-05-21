@@ -162,3 +162,21 @@ export async function getSmallBlind(
   return (await client.query(getSmallBlind, [gameId, playerSize - 1])).rows[0]
     .token
 }
+
+export async function getBigBlind(
+  gameId: string,
+  playerSize: number,
+  client: Client
+): Promise<string> {
+  const getBigBlind = 'SELECT token FROM Players WHERE game_id=$1 AND turn=$2'
+  return (await client.query(getBigBlind, [gameId, playerSize - 1])).rows[0]
+    .token
+}
+
+export async function getSmallBlindValue(
+  gameId: string,
+  client: Client
+): Promise<string> {
+  const query = 'SELECT small_blind FROM Games WHERE game_id=$1'
+  return (await client.query(query, [gameId])).rows[0].small_blind
+}
