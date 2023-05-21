@@ -19,7 +19,7 @@ import { PlayerState } from '../../utils/types'
 const router: Router = express.Router()
 
 router.get(
-  '/fold',
+  '/actionFold',
   rateLimiter,
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
@@ -75,7 +75,6 @@ router.get(
         }
 
         await sendFirebaseMessageToEveryone(message, gameId, client)
-
         res.sendStatus(200)
       })
       .catch((err) => {

@@ -7,7 +7,7 @@ import createGame from './routes/createGame'
 import modifyGame from './routes/modifyGame'
 import leaveGame from './routes/leaveGame'
 import startGame from './routes/startGame'
-import fold from './routes/gameplay/fold'
+import actionFold from './routes/gameplay/fold'
 import actionRaise from './routes/gameplay/raise'
 import { rateLimiter } from './utils/rateLimiter'
 
@@ -41,7 +41,7 @@ app.use(leaveGame)
 
 app.use(startGame)
 
-app.use(fold)
+app.use(actionFold)
 
 app.use(actionRaise)
 

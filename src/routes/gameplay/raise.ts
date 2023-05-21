@@ -78,7 +78,6 @@ router.get(
         }
 
         await sendFirebaseMessageToEveryone(message, gameId, client)
-
         res.sendStatus(200)
       })
       .catch((err) => {
