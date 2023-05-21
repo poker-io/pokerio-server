@@ -48,4 +48,6 @@ app.use(actionRaise)
 
 app.use(actionCheck)
 
+app.use(check)
+
 app.use(errorHandling)

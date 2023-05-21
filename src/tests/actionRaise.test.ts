@@ -64,7 +64,7 @@ test('Raise, correct arguments 1', async () => {
 
   await request(app)
     .get(
-      `/actionRaise?playerToken=${players[0].token}&gameId=${gameId}&amount=5`
+      `/actionRaise?playerToken=${players[0].token}&gameId=${gameId}&amount=300`
     )
     .expect(200)
   await request(app)
@@ -92,7 +92,7 @@ test('Raise, correct arguments 1', async () => {
 
   await request(app)
     .get(
-      `/actionRaise?playerToken=${players[2].token}&gameId=${gameId}&amount=20`
+      `/actionRaise?playerToken=${players[2].token}&gameId=${gameId}&amount=400`
     )
     .expect(200)
 
