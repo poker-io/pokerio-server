@@ -78,6 +78,10 @@ router.get(
 
         res.sendStatus(200)
       })
+      .catch(async (err) => {
+        console.log(err.stack)
+        return res.sendStatus(500)
+      })
       .finally(async () => {
         await client.end()
       })
