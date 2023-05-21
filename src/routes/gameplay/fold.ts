@@ -52,7 +52,7 @@ router.get(
         if (newPlayer === '') {
           const message = {
             data: {
-              player: sha256(newPlayer).toString(),
+              player: sha256(playerToken).toString(),
               type: PlayerState.Won,
               actionPayload: '',
             },
