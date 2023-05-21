@@ -103,9 +103,11 @@ test('Start game, correct arguments', async () => {
         // Check if game has started.
         expect(game.rows[0].current_player).not.toBeNull()
         expect(game.rows[0].small_blind_who).not.toBeNull()
-        expect(game.rows[0].small_blind_who).toEqual(
-          game.rows[0].current_player
+        const smallBlindTurnResult = await client.query(
+          'SELECT turn from Players where token = $1',
+          [game.rows[0].small_blind_who]
         )
+        expect(smallBlindTurnResult.rows[0].turn).toEqual('1')
         expect(game.rows[0].current_table_value).not.toBeNull()
         // Check cards.
         expect(game.rows[0].card1).not.toBeNull()

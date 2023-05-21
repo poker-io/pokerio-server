@@ -5,8 +5,8 @@ export default async function teardown() {
   client
     .connect()
     .then(async () => {
-      await client.query('DELETE FROM games casdcade')
-      await client.query('DELETE FROM players cascade')
+      await client.query('DROP TABLE games cascade')
+      await client.query('DROP TABLE players cascade')
     })
     .catch((err) => {
       console.log('Teardown failed')
