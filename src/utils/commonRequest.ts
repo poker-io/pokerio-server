@@ -1,5 +1,7 @@
 import { type Client } from 'pg'
-import { type FirebasePlayerInfo, PlayerState } from './types'
+import { type FirebasePlayerInfo, PlayerState, type FirebasePlayerInfoWIthCards } from './types'
+const poker = require('poker-hands')
+const Hand = require('pokersolver').Hand
 
 export const STARTING_FUNDS_DEFAULT = 1000
 export const SMALL_BLIND_DEFAULT = 100
@@ -179,4 +181,94 @@ export async function getSmallBlindValue(
 ): Promise<string> {
   const query = 'SELECT small_blind FROM Games WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows[0].small_blind
+}
+
+export async function getRemainingPlayersCards(gameId: string, client: Client): Promise<FirebasePlayerInfoWIthCards[]> {
+  const query = 'SELECT token, nickname, card1, card2 FROM Players WHERE game_id=$1 and last_action <> $2'
+  const values = [gameId, PlayerState.Folded]
+  return (await client.query(query, values)).rows
+}
+
+export async function getGameCards(gameId: string, client: Client) {
+  const query = 'SELECT card1, card2, card3, card4, card5 FROM games WHERE game_id=$1'
+  const queryResult = (await client.query(query, [gameId]))
+  const cards: string[] = []
+  console.log('query result:::::::::::')
+  console.log(queryResult.rows[0])
+  Object.entries(queryResult.rows[0]).forEach(([key, value]) => {
+    cards.push(convertCardName(value as string))
+  })
+  return cards
+}
+
+export async function calculateWinner(gameId: string, client: Client) {
+  const playersWithCards = await getRemainingPlayersCards(gameId, client)
+  const gameCards = await getGameCards(gameId, client)
+  const playersHands: string[] = []
+  let gameCardsString = ''
+  Object.entries(gameCards).forEach(([key, value]) => {
+    gameCardsString = gameCardsString.concat(' ').concat(value)
+  })
+  console.log(gameCardsString)
+  playersWithCards.forEach((player) => {
+    const hand = ''
+      .concat(convertCardName(player.card1))
+      .concat(' ')
+      .concat(convertCardName(player.card2))
+      .concat(gameCardsString)
+    playersHands.push(hand)
+  })
+  console.log(poker.judgeWinner(['2C 3S 8S 8D TD 3C 3C 3C', '2C 3S 8S 8D TD 3C 3C 3C', '2C 3S 8S 8D TD 3C 3C 3C']))
+  console.log(playersHands)
+  console.log(poker.judgeWinner(playersHands))
+  // const winners = Hand.winners(playersHands)
+  // return winners
+  const winners:number[] = []
+  const winner = poker.judgeWinner(playersHands)
+  const winningHand = playersHands[winner]
+  winners.push(winner)
+  delete playersHands[winner]
+  consrt
+  let unique = true
+  while (unique) {
+    
+  }
+  return playersWithCards[poker.judgeWinner(playersHands)].token
+}
+
+function convertCardName(cardName: string): string {
+  let newName = ''
+  if (cardName[0] === '1') {
+    switch (cardName[1]) {
+      case '0':
+        newName += 'T'
+        break
+      case '1':
+        newName += 'J'
+        break
+      case '2':
+        newName += 'Q'
+        break
+      case '3':
+        newName += 'K'
+    }
+  } else if (cardName[1] === '1') { // Ace
+    newName += 'A'
+  } else {
+    newName += cardName[1]
+  }
+  switch (cardName[2]) {
+    case 'K':
+      newName += 'H'
+      break
+    case 'O':
+      newName += 'D'
+      break
+    case 'T':
+      newName += 'C'
+      break
+    case 'P':
+      newName += 'S'
+  }
+  return newName
 }
