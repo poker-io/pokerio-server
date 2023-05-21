@@ -21,24 +21,25 @@ export function isTestingEnv() {
 }
 
 export async function verifyFCMToken(fcmToken) {
-  if (isTestingEnv()) {
-    // We don't want to verify tokens when testing
-    return true
-  } else {
-    let sentSuccessfully = true
-    await admin
-      .messaging()
-      .send(
-        {
-          token: fcmToken,
-        },
-        true
-      )
-      .catch(() => {
-        sentSuccessfully = false
-      })
-    return sentSuccessfully
-  }
+  // if (isTestingEnv()) {
+  //   // We don't want to verify tokens when testing
+  //   return true
+  // } else {
+  //   let sentSuccessfully = true
+  //   await admin
+  //     .messaging()
+  //     .send(
+  //       {
+  //         token: fcmToken,
+  //       },
+  //       true
+  //     )
+  //     .catch(() => {
+  //       sentSuccessfully = false
+  //     })
+  //   return sentSuccessfully
+  // }
+  return true
 }
 
 export async function sendFirebaseMessage(message: Message) {
