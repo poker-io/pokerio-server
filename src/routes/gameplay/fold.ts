@@ -50,9 +50,10 @@ router.get(
         await setPlayerState(playerToken, client, PlayerState.Folded)
         const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
         if (newPlayer === '') {
+          const winner = (await playersStillInGame(gameId, client))[0]
           const message = {
             data: {
-              player: sha256(playerToken).toString(),
+              player: sha256(winner).toString(),
               type: PlayerState.Won,
               actionPayload: '',
             },
@@ -88,3 +89,13 @@ router.get(
 )
 
 export default router
+
+export async function playersStillInGame(gameId: string, client) {
+  const query = `SELECT token
+  FROM players
+  WHERE game_id = $1 AND last_action <> $2 AND last_action <> $3 
+  AND last_action IS NOT NULL
+  `
+  const values = [gameId, PlayerState.Folded, PlayerState.NoAction]
+  return (await client.query(query, values)).rows[0]
+}
