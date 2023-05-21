@@ -47,9 +47,22 @@ router.get(
         if (!(await isPlayersTurn(playerToken, gameId, client))) {
           return res.sendStatus(402)
         }
-
-        const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
         await setPlayerState(playerToken, client, PlayerState.Folded)
+        const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
+        if (newPlayer === '') {
+          const message = {
+            data: {
+              player: sha256(newPlayer).toString(),
+              type: PlayerState.Won,
+              actionPayload: '',
+            },
+            token: '',
+          }
+
+          await sendFirebaseMessageToEveryone(message, gameId, client)
+          return res.sendStatus(201)
+        }
+
         await changeGameRoundIfNeeded(gameId, newPlayer, client)
 
         const message = {

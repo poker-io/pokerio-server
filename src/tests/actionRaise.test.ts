@@ -86,9 +86,19 @@ test('Raise, correct arguments 1', async () => {
 
   await request(app)
     .get(
+      `/actionRaise?playerToken=${players[2].token}&gameId=${gameId}&amount=2000000000`
+    )
+    .expect(403)
+
+  await request(app)
+    .get(
       `/actionRaise?playerToken=${players[2].token}&gameId=${gameId}&amount=20`
     )
     .expect(200)
+
+  await request(app)
+    .get(`/fold?playerToken=${players[0].token}&gameId=${gameId}`)
+    .expect(201)
 
   await client.end()
 }, 20000)
