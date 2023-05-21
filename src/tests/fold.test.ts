@@ -5,7 +5,7 @@ import type { NewGameInfo } from '../utils/types'
 import { getGameIdAndStatus, getPlayersInGame } from '../utils/commonRequest'
 
 test('Fold, wrong args', (done) => {
-  const wrongToken = 'TESTLEAVE_INCORRECT'
+  const wrongToken = 'TESTFOLD_INCORRECT'
   const wrongGameId = 'WRONG_ID'
   request(app).get(`/fold?playerToken=${wrongToken}`).expect(400).end(done)
 
