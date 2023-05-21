@@ -59,9 +59,12 @@ export async function setPlayerState(
   await client.query(query, [state, playerToken])
 }
 
-export async function getPlayerState(playerToken: string, client: Client) {
-  const query = 'SELECT last_action FROM Players WHERE player_token=$1'
-  await client.query(query, [playerToken])
+export async function getPlayerState(
+  playerToken: string,
+  client: Client
+): Promise<string> {
+  const query = 'SELECT last_action FROM Players WHERE token=$1'
+  return (await client.query(query, [playerToken])).rows[0].last_action
 }
 
 export async function setNewCurrentPlayer(
@@ -216,15 +219,24 @@ export async function playerRaised(
   amount: string,
   client: Client
 ) {
+  const smallBlindValue = await getSmallBlindValue(gameId, client)
   const playerSize = (await getPlayersInGame(gameId, client)).length
   const smallBlind = await getSmallBlind(gameId, playerSize, client)
-  let setNewBet = 'UPDATE Players SET funds=funds-$1, bet=$1 WHERE token=$2'
-  if (smallBlind === playerToken) {
-    setNewBet = 'UPDATE Players SET funds=funds-($1-bet), bet=$1 WHERE token=$2'
+  const smallBlindState = await getPlayerState(smallBlind, client)
+  const bigBlind = await getBigBlind(gameId, playerSize, client)
+  const bigBlindState = await getPlayerState(bigBlind, client)
+  let bet = amount
+  const setNewMoney = 'UPDATE Players SET funds=funds-$1, bet=$2 WHERE token=$3'
+  if (smallBlind === playerToken && smallBlindState == null) {
+    bet = (+amount + +smallBlindValue).toString()
+    amount = (+amount - +smallBlindValue).toString()
+  } else if (bigBlind === playerToken && bigBlindState == null) {
+    bet = (+amount + +smallBlindValue * 2).toString()
+    amount = (+amount - +smallBlindValue * 2).toString()
   }
   const putMoneyToTable =
     'UPDATE Games SET current_table_value=current_table_value+$1 WHERE game_id=$2'
 
-  await client.query(setNewBet, [amount, playerToken])
+  await client.query(setNewMoney, [amount, bet, playerToken])
   await client.query(putMoneyToTable, [amount, gameId])
 }
