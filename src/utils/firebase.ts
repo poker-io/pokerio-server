@@ -1,6 +1,8 @@
 import admin from 'firebase-admin'
 import { getMessaging, type Message } from 'firebase-admin/messaging'
 import { readFileSync } from 'fs'
+import { type Client } from 'pg'
+import { getPlayersInGame } from './commonRequest'
 
 const serviceAccount = JSON.parse(
   readFileSync('./src/serviceAccount.json', 'utf-8')
@@ -51,4 +53,16 @@ export async function sendFirebaseMessage(message: Message) {
         console.log('Error sending message:', error)
       })
   }
+}
+
+export async function sendFirebaseMessageToEveryone(
+  message,
+  gameId: string,
+  client: Client
+) {
+  const players = await getPlayersInGame(gameId, client)
+  players.forEach(async (player) => {
+    message.token = player.token
+    await sendFirebaseMessage(message)
+  })
 }

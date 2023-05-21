@@ -1,6 +1,7 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
+import { SMALL_BLIND_DEFAULT } from '../utils/commonRequest'
 
 test('Start game, wrong args', async () => {
   const client = getClient()
@@ -103,9 +104,11 @@ test('Start game, correct arguments', async () => {
         // Check if game has started.
         expect(game.rows[0].current_player).not.toBeNull()
         expect(game.rows[0].small_blind_who).not.toBeNull()
-        expect(game.rows[0].small_blind_who).toEqual(
-          game.rows[0].current_player
+        const smallBlindTurnResult = await client.query(
+          'SELECT turn from Players where token = $1',
+          [game.rows[0].small_blind_who]
         )
+        expect(smallBlindTurnResult.rows[0].turn).toEqual('1')
         expect(game.rows[0].current_table_value).not.toBeNull()
         // Check cards.
         expect(game.rows[0].card1).not.toBeNull()
@@ -139,7 +142,17 @@ test('Start game, correct arguments', async () => {
             expect(playersResult.rows[i].card1).not.toEqual(
               playersResult.rows[i].card2
             )
-            expect(playersResult.rows[i].funds).toEqual(funds)
+            if (i === playersResult.rowCount - 1) {
+              expect(parseInt(playersResult.rows[i].funds)).toEqual(
+                funds - SMALL_BLIND_DEFAULT * 2
+              )
+            } else if (i === playersResult.rowCount - 2) {
+              expect(parseInt(playersResult.rows[i].funds)).toEqual(
+                funds - SMALL_BLIND_DEFAULT
+              )
+            } else {
+              expect(playersResult.rows[i].funds).toEqual(funds)
+            }
           }
           // No duplicates.
           expect(playersResult.rows[0].card1).not.toEqual(

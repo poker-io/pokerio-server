@@ -10,7 +10,12 @@ import type {
 import { shuffleArray, fullCardDeck } from '../utils/randomise'
 import sha256 from 'crypto-js/sha256'
 import { type Client } from 'pg'
-import { getPlayersInGame } from '../utils/commonRequest'
+import {
+  getBigBlind,
+  getPlayersInGame,
+  getSmallBlind,
+  getSmallBlindValue,
+} from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -58,13 +63,30 @@ router.get(
 
         const gameInfo = createStartedGameInfo(playersInGame, cardDeck)
 
-        await updateGameState(playersInGame[0].token, gameId, gameInfo, client)
+        await updatePlayersStates(
+          playersInGame,
+          startingFunds,
+          gameInfo,
+          client
+        )
 
-        await updatePlyersStates(playersInGame, startingFunds, gameInfo, client)
+        const smallBlind = await getSmallBlind(gameId, players.length, client)
+        await updateGameState(
+          playersInGame[0].token,
+          gameId,
+          gameInfo,
+          client,
+          smallBlind,
+          players.length
+        )
 
         await notifyPlayers(playersInGame, gameInfo)
 
         res.sendStatus(200)
+      })
+      .catch(async (err) => {
+        console.log(err.stack)
+        return res.sendStatus(500)
       })
       .finally(async () => {
         await client.end()
@@ -114,7 +136,7 @@ function createStartedGameInfo(
     gameInfo.players.push({
       playerHash: sha256(players[i].token).toString(),
       nickname: players[i].nickname,
-      turn: i + 1,
+      turn: i,
     })
     players[i].card1 = cardDeck.pop() as string
     players[i].card2 = cardDeck.pop() as string
@@ -126,27 +148,40 @@ function createStartedGameInfo(
   return gameInfo
 }
 
+async function prepareBlinds(
+  client: Client,
+  smallBlind: string,
+  bigBlind,
+  smallBlindValue: string
+) {
+  const query = 'UPDATE Players SET funds=funds-$1 WHERE token=$2'
+  await client.query(query, [smallBlindValue, smallBlind])
+  await client.query(query, [+smallBlindValue * 2, bigBlind])
+}
+
 async function updateGameState(
   firstPlayerToken: string,
   gameId: string,
   gameInfo: StartingGameInfo,
-  client: Client
+  client: Client,
+  smallBlind: string,
+  playerSize: number
 ) {
   const query = `UPDATE Games SET current_player=$1, small_blind_who=$2, 
     game_round=$3, current_table_value=$4, 
     card1=$5, card2=$6, card3=$7, card4=$8, card5=$9 WHERE game_id=$10`
-  const values = [
-    firstPlayerToken,
-    firstPlayerToken,
-    1,
-    0,
-    ...gameInfo.cards,
-    gameId,
-  ]
+
+  const values = [firstPlayerToken, smallBlind, 1, 0, ...gameInfo.cards, gameId]
   await client.query(query, values)
+  await prepareBlinds(
+    client,
+    smallBlind,
+    await getBigBlind(gameId, playerSize, client),
+    await getSmallBlindValue(gameId, client)
+  )
 }
 
-async function updatePlyersStates(
+async function updatePlayersStates(
   players: FirebasePlayerInfoWIthCards[],
   startingFunds: string,
   gameInfo: StartingGameInfo,

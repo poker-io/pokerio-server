@@ -7,7 +7,7 @@ import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
 import { type Client } from 'pg'
 import {
-  isPlayerInGame,
+  isPlayerInAnyGame,
   createPlayer,
   getPlayersInGame,
   MAX_PLAYERS,
@@ -40,7 +40,7 @@ router.get(
     client
       .connect()
       .then(async () => {
-        if (await isPlayerInGame(playerToken, client)) {
+        if (await isPlayerInAnyGame(playerToken, client)) {
           return res.sendStatus(400)
         }
 
