@@ -180,3 +180,41 @@ export async function getSmallBlindValue(
   const query = 'SELECT small_blind FROM Games WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows[0].small_blind
 }
+
+export async function playerHasEnoughMoney(
+  gameId: string,
+  playerToken: string,
+  amount: string,
+  client: Client
+): Promise<boolean> {
+  const query = 'SELECT 1 FROM Players WHERE token=$1 AND funds>=$2'
+  return (await client.query(query, [playerToken, amount])).rowCount !== 0
+}
+
+export async function isRaising(
+  gameId: string,
+  amount: string,
+  client: Client
+) {
+  const getMaxBet = 'SELECT MAX(bet) as max FROM Players WHERE game_id=$1'
+  return (await (await client.query(getMaxBet, [gameId])).rows[0].max) < amount
+}
+
+export async function playerRaised(
+  gameId: string,
+  playerToken: string,
+  amount: string,
+  client: Client
+) {
+  const playerSize = (await getPlayersInGame(gameId, client)).length
+  const smallBlind = await getSmallBlind(gameId, playerSize, client)
+  let setNewBet = 'UPDATE Players SET funds=funds-$1, bet=$1 WHERE token=$2'
+  if (smallBlind === playerToken) {
+    setNewBet = 'UPDATE Players SET funds=funds-($1-bet), bet=$1 WHERE token=$2'
+  }
+  const putMoneyToTable =
+    'UPDATE Games SET current_table_value=current_table_value+$1 WHERE game_id=$2'
+
+  await client.query(setNewBet, [amount, playerToken])
+  await client.query(putMoneyToTable, [amount, gameId])
+}

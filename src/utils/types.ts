@@ -39,4 +39,5 @@ export enum PlayerState {
   Raised = 'raise',
   Checked = 'check',
   Called = 'call',
+  NoAction = '',
 }
