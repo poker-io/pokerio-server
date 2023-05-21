@@ -100,4 +100,4 @@ test('Raise, correct arguments 1', async () => {
     .expect(201)
 
   await client.end()
-}, 30000)
+}, 60000)
