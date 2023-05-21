@@ -53,7 +53,6 @@ test('Fold, correct arguments, wrong turn', async () => {
 
   const gameId = key.toString()
   const players = await getPlayersInGame(gameId, client)
-  console.log(players)
   await request(app)
     .get(`/actionFold?playerToken=${players[1].token}&gameId=${gameId}`)
     .expect(402)

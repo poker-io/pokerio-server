@@ -83,7 +83,6 @@ export async function setNewCurrentPlayer(
     gameId,
     PlayerState.Folded,
   ])
-  console.log(playersTurns.rows)
   if (playersTurns.rowCount <= 1) {
     return ''
   } else {
@@ -93,7 +92,6 @@ export async function setNewCurrentPlayer(
           playersTurns.rows[i].token,
           gameId,
         ])
-        console.log('SHOULD GO NOW: ', playersTurns.rows[i].token)
         return playersTurns.rows[i].token
       }
     }
