@@ -8,7 +8,7 @@
   "scripts": {
     "start": "tsc && node dist/index.js",
     "build": "tsc",
-    "test": "jest src/tests --coverage --config package.json ",
+    "test": "jest src/tests --coverage --config --runInBand package.json ",
     "lint": "eslint --ext '.js,.ts,.tsx' src/",
     "pretty": "yarn prettier --write .",
     "pretty-check": "yarn prettier --check src/",
@@ -42,7 +42,6 @@
     "jest": "^29.5.0",
     "joi": "^17.9.1",
     "pg": "^8.10.0",
-    "poker-hands": "^1.0.2",
     "pokersolver": "^2.1.4"
   },
   "jest": {
