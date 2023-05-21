@@ -13,13 +13,14 @@ import {
   setNewCurrentPlayer,
   changeGameRoundIfNeeded,
 } from '../../utils/commonRequest'
+import { type Client } from 'pg'
 import sha256 from 'crypto-js/sha256'
 import { PlayerState } from '../../utils/types'
 
 const router: Router = express.Router()
 
 router.get(
-  '/fold',
+  '/check',
   rateLimiter,
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
@@ -48,14 +49,18 @@ router.get(
           return res.sendStatus(402)
         }
 
-        await setPlayerState(playerToken, client, PlayerState.Folded)
+        if (!(await hasPlayerBetEnough(playerToken, gameId, client))) {
+          return res.sendStatus(403)
+        }
+
+        await setPlayerState(playerToken, client, PlayerState.Checked)
         const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
         await changeGameRoundIfNeeded(gameId, newPlayer, client)
 
         const message = {
           data: {
             player: sha256(playerToken).toString(),
-            type: PlayerState.Folded,
+            type: PlayerState.Checked,
             actionPayload: '',
           },
           token: '',
@@ -74,5 +79,26 @@ router.get(
       })
   }
 )
+
+async function getMaxBet(gameId: string, client: Client) {
+  const query =
+    'SELECT bet FROM Players WHERE game_id = $1 AND bet is not NULL order by bet desc limit 1'
+  return (await client.query(query, [gameId])).rows[0].bet
+}
+
+async function getPlayerBet(playerId: string, client: Client) {
+  const query = 'SELECT bet FROM Players WHERE token = $1'
+  return (await client.query(query, [playerId])).rows[0].bet
+}
+
+async function hasPlayerBetEnough(
+  playerId: string,
+  gameId: string,
+  client: Client
+) {
+  const maxBet = await getMaxBet(gameId, client)
+  const playerBet = await getPlayerBet(playerId, client)
+  return playerBet >= maxBet
+}
 
 export default router
