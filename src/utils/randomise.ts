@@ -67,3 +67,41 @@ export const fullCardDeck = [
   '12T',
   '13T',
 ]
+
+export function convertCardName(cardName: string): string {
+  let newName = ''
+  if (cardName[0] === '1') {
+    switch (cardName[1]) {
+      case '0':
+        newName += 'T'
+        break
+      case '1':
+        newName += 'J'
+        break
+      case '2':
+        newName += 'Q'
+        break
+      case '3':
+        newName += 'K'
+    }
+  } else if (cardName[1] === '1') {
+    // Ace
+    newName += 'A'
+  } else {
+    newName += cardName[1]
+  }
+  switch (cardName[2]) {
+    case 'K':
+      newName += 'h'
+      break
+    case 'O':
+      newName += 'd'
+      break
+    case 'T':
+      newName += 'c'
+      break
+    case 'P':
+      newName += 's'
+  }
+  return newName
+}
