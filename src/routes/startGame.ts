@@ -10,7 +10,12 @@ import type {
 import { shuffleArray, fullCardDeck } from '../utils/randomise'
 import sha256 from 'crypto-js/sha256'
 import { type Client } from 'pg'
-import { getPlayersInGame, getSmallBlind } from '../utils/commonRequest'
+import {
+  getBigBlind,
+  getPlayersInGame,
+  getSmallBlind,
+  getSmallBlindValue,
+} from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
 const router: Router = express.Router()
@@ -71,7 +76,8 @@ router.get(
           gameId,
           gameInfo,
           client,
-          smallBlind
+          smallBlind,
+          players.length
         )
 
         await notifyPlayers(playersInGame, gameInfo)
@@ -142,12 +148,26 @@ function createStartedGameInfo(
   return gameInfo
 }
 
+async function prepareBlinds(
+  gameId: string,
+  client: Client,
+  smallBlind: string,
+  bigBlind,
+  gameInfo: StartingGameInfo,
+  smallBlindValue: string
+) {
+  const query = 'UPDATE Players SET funds=funds-$1 WHERE token=$2'
+  await client.query(query, [smallBlindValue, smallBlind])
+  await client.query(query, [+smallBlindValue * 2, bigBlind])
+}
+
 async function updateGameState(
   firstPlayerToken: string,
   gameId: string,
   gameInfo: StartingGameInfo,
   client: Client,
-  smallBlind: string
+  smallBlind: string,
+  playerSize: number
 ) {
   const query = `UPDATE Games SET current_player=$1, small_blind_who=$2, 
     game_round=$3, current_table_value=$4, 
@@ -155,6 +175,14 @@ async function updateGameState(
 
   const values = [firstPlayerToken, smallBlind, 1, 0, ...gameInfo.cards, gameId]
   await client.query(query, values)
+  await prepareBlinds(
+    gameId,
+    client,
+    smallBlind,
+    await getBigBlind(gameId, playerSize, client),
+    gameInfo,
+    await getSmallBlindValue(gameId, client)
+  )
 }
 
 async function updatePlayersStates(
