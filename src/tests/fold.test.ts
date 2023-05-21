@@ -2,10 +2,10 @@ import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
 import type { NewGameInfo } from '../utils/types'
-import { getGameIdAndStatus, getPlayersInGame } from '../utils/commonRequest'
+import { getPlayersInGame } from '../utils/commonRequest'
 
 test('Fold, wrong args', (done) => {
-  const wrongToken = 'TESTLEAVE_INCORRECT'
+  const wrongToken = 'TESTFOLD_INCORRECT'
   const wrongGameId = 'WRONG_ID'
   request(app)
     .get(`/actionFold?playerToken=${wrongToken}`)
@@ -51,8 +51,7 @@ test('Fold, correct arguments, wrong turn', async () => {
     .get(`/startGame?creatorToken=${gameMasterToken}`)
     .expect(200)
 
-  const gameId =
-    (await getGameIdAndStatus(gameMasterToken, client)).gameId ?? ''
+  const gameId = key.toString()
   const players = await getPlayersInGame(gameId, client)
   console.log(players)
   await request(app)
