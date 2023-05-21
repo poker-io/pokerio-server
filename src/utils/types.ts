@@ -33,3 +33,10 @@ export interface StartingGameInfo {
   players: FirebasePlayerInfoWithTurn[]
   cards: string[]
 }
+
+export enum PlayerState {
+  Folded = 'folded',
+  Raised = 'raised',
+  Checked = 'checked',
+  Called = 'called',
+}

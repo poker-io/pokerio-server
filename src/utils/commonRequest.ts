@@ -1,5 +1,5 @@
 import { type Client } from 'pg'
-import type { FirebasePlayerInfo } from './types'
+import { type FirebasePlayerInfo, PlayerState } from './types'
 
 export const STARTING_FUNDS_DEFAULT = 1000
 export const SMALL_BLIND_DEFAULT = 100
@@ -114,8 +114,8 @@ export async function changeGameRoundIfNeeded(
     (
       await client.query(shouldProceedNextRound, [
         currentPlayerToken,
-        'raised',
-        'folded',
+        PlayerState.Raised,
+        PlayerState.Folded,
         playerCount - 1,
       ])
     ).rowCount !== 0

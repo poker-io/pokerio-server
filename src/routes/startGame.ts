@@ -58,7 +58,12 @@ router.get(
 
         const gameInfo = createStartedGameInfo(playersInGame, cardDeck)
 
-        await updatePlyersStates(playersInGame, startingFunds, gameInfo, client)
+        await updatePlayersStates(
+          playersInGame,
+          startingFunds,
+          gameInfo,
+          client
+        )
 
         const smallBlind = await getSmallBlind(gameId, players.length, client)
         await updateGameState(
@@ -148,7 +153,7 @@ async function updateGameState(
   await client.query(query, values)
 }
 
-async function updatePlyersStates(
+async function updatePlayersStates(
   players: FirebasePlayerInfoWIthCards[],
   startingFunds: string,
   gameInfo: StartingGameInfo,
