@@ -149,11 +149,9 @@ function createStartedGameInfo(
 }
 
 async function prepareBlinds(
-  gameId: string,
   client: Client,
   smallBlind: string,
   bigBlind,
-  gameInfo: StartingGameInfo,
   smallBlindValue: string
 ) {
   const query = 'UPDATE Players SET funds=funds-$1 WHERE token=$2'
@@ -176,11 +174,9 @@ async function updateGameState(
   const values = [firstPlayerToken, smallBlind, 1, 0, ...gameInfo.cards, gameId]
   await client.query(query, values)
   await prepareBlinds(
-    gameId,
     client,
     smallBlind,
     await getBigBlind(gameId, playerSize, client),
-    gameInfo,
     await getSmallBlindValue(gameId, client)
   )
 }

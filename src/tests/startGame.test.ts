@@ -1,6 +1,7 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
+import { SMALL_BLIND_DEFAULT } from '../utils/commonRequest'
 
 test('Start game, wrong args', async () => {
   const client = getClient()
@@ -141,7 +142,17 @@ test('Start game, correct arguments', async () => {
             expect(playersResult.rows[i].card1).not.toEqual(
               playersResult.rows[i].card2
             )
-            expect(playersResult.rows[i].funds).toEqual(funds)
+            if (i === playersResult.rowCount - 1) {
+              expect(parseInt(playersResult.rows[i].funds)).toEqual(
+                funds - SMALL_BLIND_DEFAULT * 2
+              )
+            } else if (i === playersResult.rowCount - 2) {
+              expect(parseInt(playersResult.rows[i].funds)).toEqual(
+                funds - SMALL_BLIND_DEFAULT
+              )
+            } else {
+              expect(playersResult.rows[i].funds).toEqual(funds)
+            }
           }
           // No duplicates.
           expect(playersResult.rows[0].card1).not.toEqual(
