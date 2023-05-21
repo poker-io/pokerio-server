@@ -1,7 +1,7 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
-import type { NewGameInfo } from '../utils/types'
+import { type NewGameInfo } from '../utils/types'
 import { getPlayersInGame } from '../utils/commonRequest'
 
 test('Fold, wrong args', (done) => {

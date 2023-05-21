@@ -1,5 +1,11 @@
 import { type Client } from 'pg'
-import { type FirebasePlayerInfo, PlayerState } from './types'
+import {
+  type FirebasePlayerInfo,
+  PlayerState,
+  type FirebasePlayerInfoWIthCards,
+} from './types'
+import { Hand } from 'pokersolver'
+import { convertCardName } from './randomise'
 
 export const STARTING_FUNDS_DEFAULT = 1000
 export const SMALL_BLIND_DEFAULT = 100
@@ -195,6 +201,52 @@ export async function getSmallBlindValue(
   const query = 'SELECT small_blind FROM Games WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows[0].small_blind
 }
+
+
+export async function getRemainingPlayersCards(
+  gameId: string,
+  client: Client
+): Promise<FirebasePlayerInfoWIthCards[]> {
+  const query =
+    'SELECT token, nickname, card1, card2 FROM Players WHERE game_id=$1 and last_action <> $2'
+  const values = [gameId, PlayerState.Folded]
+  return (await client.query(query, values)).rows
+}
+
+export async function getGameCards(gameId: string, client: Client) {
+  const query =
+    'SELECT card1, card2, card3, card4, card5 FROM games WHERE game_id=$1'
+  const queryResult = await client.query(query, [gameId])
+  const cards: string[] = []
+  Object.entries(queryResult.rows[0]).forEach(([key, value]) => {
+    cards.push(convertCardName(value as string))
+  })
+  return cards
+}
+
+export async function calculateWinner(gameId: string, client: Client) {
+  const playersWithCards = await getRemainingPlayersCards(gameId, client)
+  const gameCards = await getGameCards(gameId, client)
+  const playersHands: any[] = []
+
+  playersWithCards.forEach((player) => {
+    playersHands.push(
+      Hand.solve([
+        convertCardName(player.card1),
+        convertCardName(player.card2),
+        ...gameCards,
+      ])
+    )
+  })
+
+  const solution: any[] = Hand.winners(playersHands)
+  const winners: any[] = []
+  for (let i = 0; i < playersHands.length; i++) {
+    if (solution.includes(playersHands[i])) {
+      winners.push(playersWithCards[i].token)
+    }
+  }
+  return winners
 
 export async function playerHasEnoughMoney(
   gameId: string,

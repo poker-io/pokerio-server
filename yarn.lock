@@ -4896,6 +4896,11 @@ pm2@^5.3.0:
   optionalDependencies:
     pm2-sysmonit "^1.2.8"
 
+pokersolver@^2.1.4:
+  version "2.1.4"
+  resolved "https://registry.yarnpkg.com/pokersolver/-/pokersolver-2.1.4.tgz#58934f3dad1dc597c44e80474bc82e9626790ccc"
+  integrity sha512-vmgZS+K8H8r1RePQykFM5YyvlKo1v3xVec8FMBjg9N6mR2Tj/n/X415w+lG67FWbrk71D/CADmKFinDgaQlAsw==
+
 postgres-array@~2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/postgres-array/-/postgres-array-2.0.0.tgz#48f8fce054fbc69671999329b8834b772652d82e"

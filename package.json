@@ -8,6 +8,7 @@
   "scripts": {
     "start": "tsc && node dist/index.js",
     "build": "tsc",
+    "test": "jest src/tests --coverage --config --runInBand package.json ",
     "test": "jest src/tests/ --coverage --config package.json --runInBand",
     "lint": "eslint --ext '.js,.ts,.tsx' src/",
     "pretty": "yarn prettier --write .",
@@ -41,7 +42,8 @@
     "firebase-admin": "^11.5.0",
     "jest": "^29.5.0",
     "joi": "^17.9.1",
-    "pg": "^8.10.0"
+    "pg": "^8.10.0",
+    "pokersolver": "^2.1.4"
   },
   "jest": {
     "collectCoverage": true,
