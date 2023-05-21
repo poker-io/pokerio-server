@@ -12,6 +12,9 @@ import {
   setPlayerState,
   setNewCurrentPlayer,
   changeGameRoundIfNeeded,
+  playerHasEnoughMoney,
+  playerRaised,
+  getMaxBet,
 } from '../../utils/commonRequest'
 import sha256 from 'crypto-js/sha256'
 import { PlayerState } from '../../utils/types'
@@ -19,7 +22,7 @@ import { PlayerState } from '../../utils/types'
 const router: Router = express.Router()
 
 router.get(
-  '/actionFold',
+  '/actionCall',
   rateLimiter,
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
@@ -30,7 +33,6 @@ router.get(
   async (req, res) => {
     const playerToken = req.query.playerToken as string
     const gameId = req.query.gameId as string
-
     if (!(await verifyFCMToken(playerToken))) {
       return res.sendStatus(401)
     }
@@ -47,30 +49,26 @@ router.get(
         if (!(await isPlayersTurn(playerToken, gameId, client))) {
           return res.sendStatus(402)
         }
-        await setPlayerState(playerToken, client, PlayerState.Folded)
-        const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
-        if (newPlayer === '') {
-          const winner = (await playersStillInGame(gameId, client))[0]
-          const message = {
-            data: {
-              player: sha256(winner).toString(),
-              type: PlayerState.Won,
-              actionPayload: '',
-            },
-            token: '',
-          }
 
-          await sendFirebaseMessageToEveryone(message, gameId, client)
-          return res.sendStatus(201)
+        const maxBet = await getMaxBet(gameId, client)
+
+        if (
+          !(await playerHasEnoughMoney(gameId, playerToken, maxBet, client))
+        ) {
+          return res.sendStatus(403)
         }
 
+        const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
+
+        await setPlayerState(playerToken, client, PlayerState.Called)
+        await playerRaised(gameId, playerToken, maxBet, client)
         await changeGameRoundIfNeeded(gameId, newPlayer, client)
 
         const message = {
           data: {
             player: sha256(playerToken).toString(),
-            type: PlayerState.Folded,
-            actionPayload: '',
+            type: PlayerState.Called,
+            actionPayload: maxBet.toString(),
           },
           token: '',
         }
@@ -89,13 +87,3 @@ router.get(
 )
 
 export default router
-
-export async function playersStillInGame(gameId: string, client) {
-  const query = `SELECT token
-  FROM players
-  WHERE game_id = $1 AND last_action <> $2 AND last_action <> $3 
-  AND last_action IS NOT NULL
-  `
-  const values = [gameId, PlayerState.Folded, PlayerState.NoAction]
-  return (await client.query(query, values)).rows[0]
-}

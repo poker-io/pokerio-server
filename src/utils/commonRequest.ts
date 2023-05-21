@@ -65,9 +65,12 @@ export async function setPlayerState(
   await client.query(query, [state, playerToken])
 }
 
-export async function getPlayerState(playerToken: string, client: Client) {
-  const query = 'SELECT last_action FROM Players WHERE player_token=$1'
-  await client.query(query, [playerToken])
+export async function getPlayerState(
+  playerToken: string,
+  client: Client
+): Promise<string> {
+  const query = 'SELECT last_action FROM Players WHERE token=$1'
+  return (await client.query(query, [playerToken])).rows[0].last_action
 }
 
 export async function setNewCurrentPlayer(
@@ -76,28 +79,40 @@ export async function setNewCurrentPlayer(
   client: Client
 ) {
   const getOldPlayerTurn = 'SELECT turn FROM Players WHERE token=$1'
-  const getPlayerCount =
-    'SELECT COUNT(*) as player_count FROM Players WHERE game_id=$1'
-  const getNewCurrentPlayer =
-    'SELECT token FROM Players WHERE game_id=$1 AND turn=$2'
+
+  const getPlayersAndTurn =
+    'SELECT token, turn, last_action FROM Players WHERE game_id=$1 AND (last_action IS NULL OR last_action<>$2) ORDER BY turn ASC'
   const setNewCurrentPlayer =
     'UPDATE Games SET current_player=$1 WHERE game_id=$2'
 
-  const playerCount = await (
-    await client.query(getPlayerCount, [gameId])
-  ).rows[0].player_count
-  const newTurn =
-    (((await (
-      await client.query(getOldPlayerTurn, [oldPlayerToken])
-    ).rows[0].turn) as number) +
-      1) %
-    playerCount
-  const newPlayer = await (
-    await client.query(getNewCurrentPlayer, [gameId, newTurn])
-  ).rows[0].token
-  await client.query(setNewCurrentPlayer, [newPlayer, gameId])
+  const oldTurn = await (
+    await client.query(getOldPlayerTurn, [oldPlayerToken])
+  ).rows[0].turn
+  const playersTurns = await client.query(getPlayersAndTurn, [
+    gameId,
+    PlayerState.Folded,
+  ])
+  if (playersTurns.rowCount <= 1) {
+    return ''
+  } else {
+    for (let i = 0; i < playersTurns.rowCount; i++) {
+      if (playersTurns.rows[i].turn > oldTurn) {
+        await client.query(setNewCurrentPlayer, [
+          playersTurns.rows[i].token,
+          gameId,
+        ])
+        console.log(playersTurns.rows[i].token)
+        return playersTurns.rows[i].token
+      }
+    }
 
-  return newPlayer
+    await client.query(setNewCurrentPlayer, [
+      playersTurns.rows[0].token,
+      gameId,
+    ])
+    console.log(playersTurns.rows[0].token)
+    return playersTurns.rows[0].token
+  }
 }
 
 export async function changeGameRoundIfNeeded(
@@ -187,6 +202,7 @@ export async function getSmallBlindValue(
   return (await client.query(query, [gameId])).rows[0].small_blind
 }
 
+
 export async function getRemainingPlayersCards(
   gameId: string,
   client: Client
@@ -231,4 +247,61 @@ export async function calculateWinner(gameId: string, client: Client) {
     }
   }
   return winners
+
+export async function playerHasEnoughMoney(
+  gameId: string,
+  playerToken: string,
+  amount: string,
+  client: Client
+): Promise<boolean> {
+  const smallBlindValue = await getSmallBlindValue(gameId, client)
+  const playerSize = (await getPlayersInGame(gameId, client)).length
+  const smallBlind = await getSmallBlind(gameId, playerSize, client)
+  const smallBlindState = await getPlayerState(smallBlind, client)
+  const bigBlind = await getBigBlind(gameId, playerSize, client)
+  const bigBlindState = await getPlayerState(bigBlind, client)
+
+  if (playerToken === smallBlind && smallBlindState == null) {
+    amount = (+amount - +smallBlindValue).toString()
+  } else if (playerToken === bigBlind && bigBlindState == null) {
+    amount = (+amount - +smallBlindValue * 2).toString()
+  }
+
+  const query = 'SELECT 1 FROM Players WHERE token=$1 AND funds>=$2'
+  return (await client.query(query, [playerToken, amount])).rowCount !== 0
+}
+
+export async function isRaising(
+  gameId: string,
+  amount: string,
+  client: Client
+) {
+  const getMaxBet = 'SELECT MAX(bet) as max FROM Players WHERE game_id=$1'
+  return (await (await client.query(getMaxBet, [gameId])).rows[0].max) < amount
+}
+
+export async function playerRaised(
+  gameId: string,
+  playerToken: string,
+  amount: string,
+  client: Client
+) {
+  const getOldBet = 'SELECT bet FROM Players WHERE token=$1'
+  const setNewBet =
+    'UPDATE Players SET funds=funds+bet-$1, bet=$1 WHERE token=$2'
+  const putMoneyToTable =
+    'UPDATE Games SET current_table_value=current_table_value+$1 WHERE game_id=$2'
+
+  const oldBet: number = (await client.query(getOldBet, [playerToken])).rows[0]
+    .bet
+  await client.query(setNewBet, [amount, playerToken])
+  await client.query(putMoneyToTable, [parseInt(amount) - oldBet, gameId])
+}
+
+export async function getMaxBet(
+  gameId: string,
+  client: Client
+): Promise<string> {
+  const query = 'SELECT MAX(bet) as max FROM Players WHERE game_id=$1'
+  return (await client.query(query, [gameId])).rows[0].max
 }

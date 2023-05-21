@@ -9,6 +9,7 @@
     "start": "tsc && node dist/index.js",
     "build": "tsc",
     "test": "jest src/tests --coverage --config --runInBand package.json ",
+    "test": "jest src/tests/ --coverage --config package.json --runInBand",
     "lint": "eslint --ext '.js,.ts,.tsx' src/",
     "pretty": "yarn prettier --write .",
     "pretty-check": "yarn prettier --check src/",

@@ -12,6 +12,9 @@ import {
   setPlayerState,
   setNewCurrentPlayer,
   changeGameRoundIfNeeded,
+  playerHasEnoughMoney,
+  isRaising,
+  playerRaised,
 } from '../../utils/commonRequest'
 import sha256 from 'crypto-js/sha256'
 import { PlayerState } from '../../utils/types'
@@ -19,18 +22,19 @@ import { PlayerState } from '../../utils/types'
 const router: Router = express.Router()
 
 router.get(
-  '/actionFold',
+  '/actionRaise',
   rateLimiter,
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
       playerToken: Joi.string().required().min(1).max(250).label('playerToken'),
       gameId: Joi.number().required().min(0).max(999999).label('gameId'),
+      amount: Joi.number().required().min(1).label('amount'),
     }),
   }),
   async (req, res) => {
     const playerToken = req.query.playerToken as string
     const gameId = req.query.gameId as string
-
+    const amount = req.query.amount as string
     if (!(await verifyFCMToken(playerToken))) {
       return res.sendStatus(401)
     }
@@ -47,30 +51,28 @@ router.get(
         if (!(await isPlayersTurn(playerToken, gameId, client))) {
           return res.sendStatus(402)
         }
-        await setPlayerState(playerToken, client, PlayerState.Folded)
-        const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
-        if (newPlayer === '') {
-          const winner = (await playersStillInGame(gameId, client))[0]
-          const message = {
-            data: {
-              player: sha256(winner).toString(),
-              type: PlayerState.Won,
-              actionPayload: '',
-            },
-            token: '',
-          }
 
-          await sendFirebaseMessageToEveryone(message, gameId, client)
-          return res.sendStatus(201)
+        if (
+          !(await playerHasEnoughMoney(gameId, playerToken, amount, client))
+        ) {
+          return res.sendStatus(403)
         }
 
+        if (!(await isRaising(gameId, amount, client))) {
+          return res.sendStatus(404)
+        }
+
+        const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
+
+        await playerRaised(gameId, playerToken, amount, client)
+        await setPlayerState(playerToken, client, PlayerState.Raised)
         await changeGameRoundIfNeeded(gameId, newPlayer, client)
 
         const message = {
           data: {
             player: sha256(playerToken).toString(),
-            type: PlayerState.Folded,
-            actionPayload: '',
+            type: PlayerState.Raised,
+            actionPayload: amount.toString(),
           },
           token: '',
         }
@@ -89,13 +91,3 @@ router.get(
 )
 
 export default router
-
-export async function playersStillInGame(gameId: string, client) {
-  const query = `SELECT token
-  FROM players
-  WHERE game_id = $1 AND last_action <> $2 AND last_action <> $3 
-  AND last_action IS NOT NULL
-  `
-  const values = [gameId, PlayerState.Folded, PlayerState.NoAction]
-  return (await client.query(query, values)).rows[0]
-}

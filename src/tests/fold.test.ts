@@ -7,10 +7,13 @@ import { getPlayersInGame } from '../utils/commonRequest'
 test('Fold, wrong args', (done) => {
   const wrongToken = 'TESTFOLD_INCORRECT'
   const wrongGameId = 'WRONG_ID'
-  request(app).get(`/fold?playerToken=${wrongToken}`).expect(400).end(done)
+  request(app)
+    .get(`/actionFold?playerToken=${wrongToken}`)
+    .expect(400)
+    .end(done)
 
   request(app)
-    .get(`/fold?playerToken=${wrongToken}&gameId=${wrongGameId}`)
+    .get(`/actionFold?playerToken=${wrongToken}&gameId=${wrongGameId}`)
     .expect(400)
     .end(done)
 })
@@ -50,24 +53,22 @@ test('Fold, correct arguments, wrong turn', async () => {
 
   const gameId = key.toString()
   const players = await getPlayersInGame(gameId, client)
-
   await request(app)
-    .get(`/fold?playerToken=${players[1].token}&gameId=${gameId}`)
+    .get(`/actionFold?playerToken=${players[1].token}&gameId=${gameId}`)
     .expect(402)
-
   await request(app)
-    .get(`/fold?playerToken=${players[0].token}&gameId=${gameId}`)
+    .get(`/actionFold?playerToken=${players[0].token}&gameId=${gameId}`)
     .expect(200)
   await request(app)
-    .get(`/fold?playerToken=${players[1].token}&gameId=${gameId}`)
-    .expect(200)
+    .get(`/actionFold?playerToken=${players[1].token}&gameId=${gameId}`)
+    .expect(201)
   const getRound = 'SELECT game_round FROM Games WHERE game_id=$1'
 
   expect(
     await (
       await client.query(getRound, [gameId])
     ).rows[0].game_round
-  ).toEqual('2')
+  ).toEqual('1') // because last guy has won - no new rounds then.
 
   await client.end()
 }, 20000)
