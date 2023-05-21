@@ -64,8 +64,8 @@ router.get(
 
         const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
 
-        await setPlayerState(playerToken, client, PlayerState.Raised)
         await playerRaised(gameId, playerToken, amount, client)
+        await setPlayerState(playerToken, client, PlayerState.Raised)
         await changeGameRoundIfNeeded(gameId, newPlayer, client)
 
         const message = {
