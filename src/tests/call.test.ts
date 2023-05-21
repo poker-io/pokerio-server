@@ -40,6 +40,7 @@ test('Call, correct arguments 1', async () => {
   const gameId =
     (await getGameIdAndStatus(gameMasterToken, client)).gameId ?? ''
   const players = await getPlayersInGame(gameId, client)
+  console.log(players)
 
   await request(app)
     .get(
@@ -90,7 +91,7 @@ test('Call, correct arguments 1', async () => {
     .expect(200)
 
   await request(app)
-    .get(`/actionFold?playerToken=${players[2].token}&gameId=${gameId}`)
+    .get(`/actionFold?playerToken=${players[0].token}&gameId=${gameId}`)
     .expect(200)
 
   await client.end()
