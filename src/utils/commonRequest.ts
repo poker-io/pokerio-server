@@ -202,7 +202,6 @@ export async function getSmallBlindValue(
   return (await client.query(query, [gameId])).rows[0].small_blind
 }
 
-
 export async function getRemainingPlayersCards(
   gameId: string,
   client: Client
@@ -247,7 +246,7 @@ export async function calculateWinner(gameId: string, client: Client) {
     }
   }
   return winners
-
+}
 export async function playerHasEnoughMoney(
   gameId: string,
   playerToken: string,
