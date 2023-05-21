@@ -54,7 +54,7 @@ router.get(
           data: {
             player: playerToken,
             type: 'fold',
-            actionPayLoad: '',
+            actionPayload: '',
           },
           token: '',
         }
