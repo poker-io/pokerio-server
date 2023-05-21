@@ -91,8 +91,8 @@ test('Call, correct arguments 1', async () => {
     .expect(200)
 
   await request(app)
-    .get(`/actionFold?playerToken=${players[0].token}&gameId=${gameId}`)
-    .expect(200)
+    .get(`/actionFold?playerToken=${players[2].token}&gameId=${gameId}`)
+    .expect(402) // round ended
 
   await client.end()
 }, 20000)
