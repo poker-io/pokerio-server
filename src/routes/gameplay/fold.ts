@@ -14,6 +14,7 @@ import {
   changeGameRoundIfNeeded,
 } from '../../utils/commonRequest'
 import sha256 from 'crypto-js/sha256'
+import { PlayerState } from '../../utils/types'
 
 const router: Router = express.Router()
 
@@ -48,13 +49,13 @@ router.get(
         }
 
         const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
-        await setPlayerState(playerToken, client, 'folded')
+        await setPlayerState(playerToken, client, PlayerState.Folded)
         await changeGameRoundIfNeeded(gameId, newPlayer, client)
 
         const message = {
           data: {
             player: sha256(playerToken).toString(),
-            type: 'fold',
+            type: PlayerState.Folded,
             actionPayload: '',
           },
           token: '',

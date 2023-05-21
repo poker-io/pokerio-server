@@ -35,8 +35,8 @@ export interface StartingGameInfo {
 }
 
 export enum PlayerState {
-  Folded = 'folded',
-  Raised = 'raised',
-  Checked = 'checked',
-  Called = 'called',
+  Folded = 'fold',
+  Raised = 'raise',
+  Checked = 'check',
+  Called = 'call',
 }
