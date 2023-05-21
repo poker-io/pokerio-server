@@ -13,10 +13,10 @@ test('Check, wrong args', async () => {
   const player2Nick = 'CHECK_INC_P2_NICK'
   const wrongToken = 'TESTCHECK_INCORRECT'
   const wrongGameId = 'WRONG_ID'
-  await request(app).get(`/check?playerToken=${wrongToken}`).expect(400)
+  await request(app).get(`/actionCheck?playerToken=${wrongToken}`).expect(400)
 
   await request(app)
-    .get(`/check?playerToken=${wrongToken}&gameId=${wrongGameId}`)
+    .get(`/actionCheck?playerToken=${wrongToken}&gameId=${wrongGameId}`)
     .expect(400)
 
   const client = getClient()
@@ -48,11 +48,11 @@ test('Check, wrong args', async () => {
   const gameId = key.toString()
   const players = await getPlayersInGame(gameId, client)
   await request(app)
-    .get(`/check?playerToken=${players[1].token}&gameId=${gameId}`)
+    .get(`/actionCheck?playerToken=${players[1].token}&gameId=${gameId}`)
     .expect(402)
-  // await request(app)
-  //   .get(`/check?playerToken=${players[0].token}&gameId=${gameId}`)
-  //   .expect(403)
+  await request(app)
+    .get(`/actionCheck?playerToken=${players[0].token}&gameId=${gameId}`)
+    .expect(403)
   await client.end()
 }, 20000)
 
@@ -93,7 +93,7 @@ test('Check, correct args', async () => {
   const players = await getPlayersInGame(gameId, client)
   await client.query('UPDATE Players SET bet=0 WHERE game_id=$1', [gameId])
   await request(app)
-    .get(`/check?playerToken=${players[0].token}&gameId=${gameId}`)
+    .get(`/actionCheck?playerToken=${players[0].token}&gameId=${gameId}`)
     .expect(200)
   await client.end()
 }, 20000)

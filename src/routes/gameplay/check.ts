@@ -20,7 +20,7 @@ import { PlayerState } from '../../utils/types'
 const router: Router = express.Router()
 
 router.get(
-  '/check',
+  '/actionCheck',
   rateLimiter,
   celebrate({
     [Segments.QUERY]: Joi.object().keys({
