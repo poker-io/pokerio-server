@@ -1,6 +1,7 @@
 import { app } from '../app'
 import request from 'supertest'
 import { getClient } from '../utils/databaseConnection'
+
 import { type NewGameInfo, PlayerState } from '../utils/types'
 import {
   getGameIdAndStatus,
@@ -52,8 +53,7 @@ test('Fold, correct arguments, wrong turn', async () => {
     .get(`/startGame?creatorToken=${gameMasterToken}`)
     .expect(200)
 
-  const gameId =
-    (await getGameIdAndStatus(gameMasterToken, client)).gameId ?? ''
+  const gameId = key.toString()
   const players = await getPlayersInGame(gameId, client)
 
   await request(app)
