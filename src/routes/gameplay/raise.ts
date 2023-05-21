@@ -72,7 +72,7 @@ router.get(
           data: {
             player: sha256(playerToken).toString(),
             type: PlayerState.Raised,
-            actionPayload: amount,
+            actionPayload: amount.toString(),
           },
           token: '',
         }

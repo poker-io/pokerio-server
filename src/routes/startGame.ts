@@ -216,7 +216,7 @@ async function notifyPlayers(
   const message = {
     data: {
       type: 'startGame',
-      startedGameInfo: JSON.stringify(gameInfo.players),
+      players: JSON.stringify(gameInfo.players),
       card1: '',
       card2: '',
     },
