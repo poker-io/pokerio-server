@@ -52,7 +52,7 @@ router.get(
 
         const message = {
           data: {
-            player: playerToken,
+            player: sha256(playerToken).toString(),
             type: 'fold',
             actionPayload: '',
           },
