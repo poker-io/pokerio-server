@@ -13,6 +13,7 @@ import {
   setNewCurrentPlayer,
   changeGameRoundIfNeeded,
 } from '../../utils/commonRequest'
+import sha256 from 'crypto-js/sha256'
 
 const router: Router = express.Router()
 
