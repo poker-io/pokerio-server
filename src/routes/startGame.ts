@@ -154,9 +154,19 @@ async function prepareBlinds(
   bigBlind,
   smallBlindValue: string
 ) {
-  const query = 'UPDATE Players SET funds=funds-$1 WHERE token=$2'
-  await client.query(query, [smallBlindValue, smallBlind])
-  await client.query(query, [+smallBlindValue * 2, bigBlind])
+  const query = 'UPDATE Players SET funds=funds-$1, bet=$2 WHERE token=$3'
+  const smallBlindQueryValues = [
+    smallBlindValue,
+    parseInt(smallBlindValue),
+    smallBlind,
+  ]
+  const bigBlindQueryValues = [
+    +smallBlindValue * 2,
+    parseInt(smallBlindValue) * 2,
+    bigBlind,
+  ]
+  await client.query(query, smallBlindQueryValues)
+  await client.query(query, bigBlindQueryValues)
 }
 
 async function updateGameState(
@@ -188,7 +198,7 @@ async function updatePlayersStates(
   client: Client
 ) {
   const query =
-    'UPDATE Players SET turn=$1, card1=$2, card2=$3, funds=$4 WHERE token=$5'
+    'UPDATE Players SET turn=$1, card1=$2, card2=$3, funds=$4, bet=0 WHERE token=$5'
   const values = [0, 'card1', 'card2', startingFunds, 'token']
   for (let i = 0; i < players.length; i++) {
     values[0] = gameInfo.players[i].turn
