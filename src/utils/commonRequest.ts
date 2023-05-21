@@ -59,9 +59,12 @@ export async function setPlayerState(
   await client.query(query, [state, playerToken])
 }
 
-export async function getPlayerState(playerToken: string, client: Client) {
-  const query = 'SELECT last_action FROM Players WHERE player_token=$1'
-  await client.query(query, [playerToken])
+export async function getPlayerState(
+  playerToken: string,
+  client: Client
+): Promise<string> {
+  const query = 'SELECT last_action FROM Players WHERE token=$1'
+  return (await client.query(query, [playerToken])).rows[0].last_action
 }
 
 export async function setNewCurrentPlayer(
@@ -92,6 +95,7 @@ export async function setNewCurrentPlayer(
           playersTurns.rows[i].token,
           gameId,
         ])
+        console.log(playersTurns.rows[i].token)
         return playersTurns.rows[i].token
       }
     }
@@ -100,6 +104,7 @@ export async function setNewCurrentPlayer(
       playersTurns.rows[0].token,
       gameId,
     ])
+    console.log(playersTurns.rows[0].token)
     return playersTurns.rows[0].token
   }
 }
@@ -197,7 +202,20 @@ export async function playerHasEnoughMoney(
   amount: string,
   client: Client
 ): Promise<boolean> {
-  const query = 'SELECT 1 FROM Players WHERE token=$1 AND funds+bet>=$2'
+  const smallBlindValue = await getSmallBlindValue(gameId, client)
+  const playerSize = (await getPlayersInGame(gameId, client)).length
+  const smallBlind = await getSmallBlind(gameId, playerSize, client)
+  const smallBlindState = await getPlayerState(smallBlind, client)
+  const bigBlind = await getBigBlind(gameId, playerSize, client)
+  const bigBlindState = await getPlayerState(bigBlind, client)
+
+  if (playerToken === smallBlind && smallBlindState == null) {
+    amount = (+amount - +smallBlindValue).toString()
+  } else if (playerToken === bigBlind && bigBlindState == null) {
+    amount = (+amount - +smallBlindValue * 2).toString()
+  }
+
+  const query = 'SELECT 1 FROM Players WHERE token=$1 AND funds>=$2'
   return (await client.query(query, [playerToken, amount])).rowCount !== 0
 }
 
@@ -226,4 +244,12 @@ export async function playerRaised(
     .bet
   await client.query(setNewBet, [amount, playerToken])
   await client.query(putMoneyToTable, [parseInt(amount) - oldBet, gameId])
+}
+
+export async function getMaxBet(
+  gameId: string,
+  client: Client
+): Promise<string> {
+  const query = 'SELECT MAX(bet) as max FROM Players WHERE game_id=$1'
+  return (await client.query(query, [gameId])).rows[0].max
 }
