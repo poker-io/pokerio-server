@@ -258,6 +258,6 @@ export async function getMaxBet(
   gameId: string,
   client: Client
 ): Promise<string> {
-  const query = 'SELECT MAX(bet) as max FROM Games WHERE game_id=$1'
+  const query = 'SELECT MAX(bet) as max FROM Players WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows[0].max
 }
