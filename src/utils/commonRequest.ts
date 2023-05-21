@@ -159,7 +159,7 @@ export async function getSmallBlind(
   client: Client
 ): Promise<string> {
   const getSmallBlind = 'SELECT token FROM Players WHERE game_id=$1 AND turn=$2'
-  return (await client.query(getSmallBlind, [gameId, playerSize - 1])).rows[0]
+  return (await client.query(getSmallBlind, [gameId, playerSize - 2])).rows[0]
     .token
 }
 
