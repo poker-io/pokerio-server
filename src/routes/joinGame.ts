@@ -1,4 +1,4 @@
-import { getClient } from '../utils/databaseConnection'
+import { runRequestWithClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import sha256 from 'crypto-js/sha256'
 import type { GameLobbyData, FirebasePlayerInfo } from '../utils/types'
@@ -35,41 +35,30 @@ router.get(
       return res.sendStatus(401)
     }
 
-    const client = getClient()
+    await runRequestWithClient(res, async (client) => {
+      if (await isPlayerInAnyGame(playerToken, client)) {
+        return res.sendStatus(400)
+      }
 
-    client
-      .connect()
-      .then(async () => {
-        if (await isPlayerInAnyGame(playerToken, client)) {
-          return res.sendStatus(400)
-        }
+      if (!(await isGameJoinable(gameId, client))) {
+        return res.sendStatus(402)
+      }
 
-        if (!(await isGameJoinable(gameId, client))) {
-          return res.sendStatus(402)
-        }
+      const gameInfo = await getGameInfo(gameId, client)
 
-        const gameInfo = await getGameInfo(gameId, client)
+      const players = await getPlayersInGame(gameId, client)
 
-        const players = await getPlayersInGame(gameId, client)
+      await completeInfoAndNotifyPlayers(
+        gameInfo,
+        nickname,
+        playerToken,
+        players
+      )
 
-        await completeInfoAndNotifyPlayers(
-          gameInfo,
-          nickname,
-          playerToken,
-          players
-        )
+      await createPlayer(playerToken, nickname, gameId, client)
 
-        await createPlayer(playerToken, nickname, gameId, client)
-
-        res.send(gameInfo)
-      })
-      .catch((err) => {
-        console.log(err.stack)
-        return res.sendStatus(500)
-      })
-      .finally(async () => {
-        await client.end()
-      })
+      res.send(gameInfo)
+    })
   }
 )
 
