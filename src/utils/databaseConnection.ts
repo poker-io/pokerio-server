@@ -82,26 +82,18 @@ const pool = new Pool({
 })
 
 export async function databaseInit(): Promise<void> {
-  let success = true
-  const client = getClient()
-  try {
-    // Connect
+  let success = false
+
+  await runRequestWithClient(undefined, async (client) => {
     await client.connect()
 
     // Create the tables
     await client.query(CREATE_PLAYERS_TABLE_QUERY)
     await client.query(CREATE_GAMES_TABLE_QUERY)
     await client.query(GENERATE_RANDOM_KEY_FUNCTION_QUERY)
-  } catch (err) {
-    console.error(err)
-    success = false
-  } finally {
-    try {
-      await client.end()
-    } catch (err) {
-      console.error(err)
-    }
-  }
+
+    success = true
+  })
 
   if (success) {
     await Promise.resolve()
@@ -111,7 +103,7 @@ export async function databaseInit(): Promise<void> {
 }
 
 export async function runRequestWithClient(
-  res: Response<any, Record<string, any>, number>,
+  res: Response<any, Record<string, any>, number> | undefined,
   lambda: (client: pg.PoolClient) => void
 ) {
   const pgClient = await pool.connect()
@@ -119,7 +111,7 @@ export async function runRequestWithClient(
   try {
     await lambda.call(this, pgClient)
   } catch {
-    res.sendStatus(500)
+    res?.sendStatus(500)
   }
 
   pgClient.release()
