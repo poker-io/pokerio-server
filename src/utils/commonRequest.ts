@@ -1,4 +1,4 @@
-import { type Client } from 'pg'
+import { type PoolClient } from 'pg'
 import {
   type FirebasePlayerInfo,
   PlayerState,
@@ -13,21 +13,29 @@ export const MAX_PLAYERS = 8
 export const TURN_DEFAULT = -1
 
 export async function createPlayer(
-  playerToken: string,
-  nickname: string,
+  newPlayer: FirebasePlayerInfo,
   gameId: string | null,
-  client: Client
+  client: PoolClient
 ) {
   const query = `INSERT INTO Players(token, nickname, turn, 
             game_id, card1, card2, funds, bet) 
             VALUES($1, $2, $3, $4, $5, $6, $7, $8)`
-  const values = [playerToken, nickname, 0, gameId, null, null, null, null]
+  const values = [
+    newPlayer.token,
+    newPlayer.nickname,
+    0,
+    gameId,
+    null,
+    null,
+    null,
+    null,
+  ]
   await client.query(query, values)
 }
 
 export async function isPlayerInAnyGame(
   playerToken: string,
-  client: Client
+  client: PoolClient
 ): Promise<boolean> {
   const query = 'SELECT 1 FROM Players WHERE token=$1'
   return (await client.query(query, [playerToken])).rowCount !== 0
@@ -36,7 +44,7 @@ export async function isPlayerInAnyGame(
 export async function isPlayerInGame(
   playerToken: string,
   gameId: string,
-  client: Client
+  client: PoolClient
 ): Promise<boolean> {
   const query = 'SELECT 1 FROM Players WHERE token=$1 AND game_id=$2'
   return (await client.query(query, [playerToken, gameId])).rowCount !== 0
@@ -45,20 +53,20 @@ export async function isPlayerInGame(
 export async function isPlayersTurn(
   playerToken: string,
   gameId: string,
-  client: Client
+  client: PoolClient
 ): Promise<boolean> {
   const query = 'SELECT 1 FROM Games WHERE game_id=$1 AND current_player=$2'
   return (await client.query(query, [gameId, playerToken])).rowCount !== 0
 }
 
-export async function deletePlayer(playerToken: string, client: Client) {
+export async function deletePlayer(playerToken: string, client: PoolClient) {
   const query = 'DELETE FROM Players WHERE token=$1'
   await client.query(query, [playerToken])
 }
 
 export async function setPlayerState(
   playerToken: string,
-  client: Client,
+  client: PoolClient,
   state: string
 ) {
   const query = 'UPDATE Players SET last_action=$1 WHERE token=$2'
@@ -67,7 +75,7 @@ export async function setPlayerState(
 
 export async function getPlayerState(
   playerToken: string,
-  client: Client
+  client: PoolClient
 ): Promise<string> {
   const query = 'SELECT last_action FROM Players WHERE token=$1'
   return (await client.query(query, [playerToken])).rows[0].last_action
@@ -76,7 +84,7 @@ export async function getPlayerState(
 export async function setNewCurrentPlayer(
   oldPlayerToken: string,
   gameId: string,
-  client: Client
+  client: PoolClient
 ) {
   const getOldPlayerTurn = 'SELECT turn FROM Players WHERE token=$1'
 
@@ -118,7 +126,7 @@ export async function setNewCurrentPlayer(
 export async function changeGameRoundIfNeeded(
   gameId: string,
   currentPlayerToken: string,
-  client: Client
+  client: PoolClient
 ): Promise<boolean> {
   // The next round commences only if there is one active player OR when current player was the last raiser
   const shouldProceedNextRound = `SELECT 1 FROM Players A WHERE 
@@ -152,7 +160,7 @@ export async function changeGameRoundIfNeeded(
 
 export async function getPlayersInGame(
   gameId: string,
-  client: Client
+  client: PoolClient
 ): Promise<FirebasePlayerInfo[]> {
   const query =
     'SELECT token, nickname FROM Players WHERE game_id=$1 ORDER BY turn ASC'
@@ -161,7 +169,7 @@ export async function getPlayersInGame(
 
 export async function getGameIdAndStatus(
   gameMaster: string,
-  client: Client
+  client: PoolClient
 ): Promise<{ gameId: string | null; started: boolean }> {
   const query = 'SELECT game_id, current_player FROM Games WHERE game_master=$1'
   const result = await client.query(query, [gameMaster])
@@ -177,7 +185,7 @@ export async function getGameIdAndStatus(
 export async function getSmallBlind(
   gameId: string,
   playerSize: number,
-  client: Client
+  client: PoolClient
 ): Promise<string> {
   const getSmallBlind = 'SELECT token FROM Players WHERE game_id=$1 AND turn=$2'
   return (await client.query(getSmallBlind, [gameId, playerSize - 2])).rows[0]
@@ -187,7 +195,7 @@ export async function getSmallBlind(
 export async function getBigBlind(
   gameId: string,
   playerSize: number,
-  client: Client
+  client: PoolClient
 ): Promise<string> {
   const getBigBlind = 'SELECT token FROM Players WHERE game_id=$1 AND turn=$2'
   return (await client.query(getBigBlind, [gameId, playerSize - 1])).rows[0]
@@ -196,7 +204,7 @@ export async function getBigBlind(
 
 export async function getSmallBlindValue(
   gameId: string,
-  client: Client
+  client: PoolClient
 ): Promise<string> {
   const query = 'SELECT small_blind FROM Games WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows[0].small_blind
@@ -204,7 +212,7 @@ export async function getSmallBlindValue(
 
 export async function getRemainingPlayersCards(
   gameId: string,
-  client: Client
+  client: PoolClient
 ): Promise<FirebasePlayerInfoWIthCards[]> {
   const query =
     'SELECT token, nickname, card1, card2 FROM Players WHERE game_id=$1 and last_action <> $2'
@@ -212,7 +220,7 @@ export async function getRemainingPlayersCards(
   return (await client.query(query, values)).rows
 }
 
-export async function getGameCards(gameId: string, client: Client) {
+export async function getGameCards(gameId: string, client: PoolClient) {
   const query =
     'SELECT card1, card2, card3, card4, card5 FROM games WHERE game_id=$1'
   const queryResult = await client.query(query, [gameId])
@@ -223,7 +231,7 @@ export async function getGameCards(gameId: string, client: Client) {
   return cards
 }
 
-export async function calculateWinner(gameId: string, client: Client) {
+export async function calculateWinner(gameId: string, client: PoolClient) {
   const playersWithCards = await getRemainingPlayersCards(gameId, client)
   const gameCards = await getGameCards(gameId, client)
   const playersHands: any[] = []
@@ -251,7 +259,7 @@ export async function playerHasEnoughMoney(
   gameId: string,
   playerToken: string,
   amount: string,
-  client: Client
+  client: PoolClient
 ): Promise<boolean> {
   const smallBlindValue = await getSmallBlindValue(gameId, client)
   const playerSize = (await getPlayersInGame(gameId, client)).length
@@ -273,7 +281,7 @@ export async function playerHasEnoughMoney(
 export async function isRaising(
   gameId: string,
   amount: string,
-  client: Client
+  client: PoolClient
 ) {
   const getMaxBet = 'SELECT MAX(bet) as max FROM Players WHERE game_id=$1'
   return (await (await client.query(getMaxBet, [gameId])).rows[0].max) < amount
@@ -283,7 +291,7 @@ export async function playerRaised(
   gameId: string,
   playerToken: string,
   amount: string,
-  client: Client
+  client: PoolClient
 ) {
   const getOldBet = 'SELECT bet FROM Players WHERE token=$1'
   const setNewBet =
@@ -299,7 +307,7 @@ export async function playerRaised(
 
 export async function getMaxBet(
   gameId: string,
-  client: Client
+  client: PoolClient
 ): Promise<string> {
   const query = 'SELECT MAX(bet) as max FROM Players WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows[0].max
