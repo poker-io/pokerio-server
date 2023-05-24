@@ -1,4 +1,4 @@
-import { getClient } from '../../utils/databaseConnection'
+import { runRequestWithClient } from '../../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import {
   sendFirebaseMessageToEveryone,
@@ -37,52 +37,39 @@ router.get(
       return res.sendStatus(401)
     }
 
-    const client = getClient()
+    await runRequestWithClient(res, async (client) => {
+      if (!(await isPlayerInGame(playerToken, gameId, client))) {
+        return res.sendStatus(400)
+      }
 
-    client
-      .connect()
-      .then(async () => {
-        if (!(await isPlayerInGame(playerToken, gameId, client))) {
-          return res.sendStatus(400)
-        }
+      if (!(await isPlayersTurn(playerToken, gameId, client))) {
+        return res.sendStatus(402)
+      }
 
-        if (!(await isPlayersTurn(playerToken, gameId, client))) {
-          return res.sendStatus(402)
-        }
+      const maxBet = await getMaxBet(gameId, client)
 
-        const maxBet = await getMaxBet(gameId, client)
+      if (!(await playerHasEnoughMoney(gameId, playerToken, maxBet, client))) {
+        return res.sendStatus(403)
+      }
 
-        if (
-          !(await playerHasEnoughMoney(gameId, playerToken, maxBet, client))
-        ) {
-          return res.sendStatus(403)
-        }
+      const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
 
-        const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
+      await setPlayerState(playerToken, client, PlayerState.Called)
+      await playerRaised(gameId, playerToken, maxBet, client)
+      await changeGameRoundIfNeeded(gameId, newPlayer, client)
 
-        await setPlayerState(playerToken, client, PlayerState.Called)
-        await playerRaised(gameId, playerToken, maxBet, client)
-        await changeGameRoundIfNeeded(gameId, newPlayer, client)
+      const message = {
+        data: {
+          player: sha256(playerToken).toString(),
+          type: PlayerState.Called,
+          actionPayload: maxBet.toString(),
+        },
+        token: '',
+      }
 
-        const message = {
-          data: {
-            player: sha256(playerToken).toString(),
-            type: PlayerState.Called,
-            actionPayload: maxBet.toString(),
-          },
-          token: '',
-        }
-
-        await sendFirebaseMessageToEveryone(message, gameId, client)
-        res.sendStatus(200)
-      })
-      .catch((err) => {
-        console.log(err.stack)
-        return res.sendStatus(500)
-      })
-      .finally(async () => {
-        await client.end()
-      })
+      await sendFirebaseMessageToEveryone(message, gameId, client)
+      res.sendStatus(200)
+    })
   }
 )
 

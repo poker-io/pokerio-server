@@ -1,4 +1,4 @@
-import { getClient } from '../utils/databaseConnection'
+import { runRequestWithClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
@@ -9,7 +9,7 @@ import type {
 } from '../utils/types'
 import { shuffleArray, fullCardDeck } from '../utils/randomise'
 import sha256 from 'crypto-js/sha256'
-import { type Client } from 'pg'
+import { type PoolClient } from 'pg'
 import {
   getBigBlind,
   getPlayersInGame,
@@ -39,58 +39,43 @@ router.get(
       return res.sendStatus(401)
     }
 
-    const client = getClient()
-    client
-      .connect()
-      .then(async () => {
-        const { gameId, startingFunds } = await getGameInfoIfNotStarted(
-          creatorToken,
-          client
-        )
-        if (gameId === null) {
-          return res.sendStatus(400)
-        }
+    await runRequestWithClient(res, async (client) => {
+      const { gameId, startingFunds } = await getGameInfoIfNotStarted(
+        creatorToken,
+        client
+      )
+      if (gameId === null) {
+        return res.sendStatus(400)
+      }
 
-        const players = await getPlayersInGame(gameId, client)
+      const players = await getPlayersInGame(gameId, client)
 
-        if (players.length < 2) {
-          return res.sendStatus(402)
-        }
+      if (players.length < 2) {
+        return res.sendStatus(402)
+      }
 
-        const playersInGame = convertToInternalPlayerInfo(players)
+      const playersInGame = convertToInternalPlayerInfo(players)
 
-        const cardDeck = fullCardDeck.slice()
+      const cardDeck = fullCardDeck.slice()
 
-        const gameInfo = createStartedGameInfo(playersInGame, cardDeck)
+      const gameInfo = createStartedGameInfo(playersInGame, cardDeck)
 
-        await updatePlayersStates(
-          playersInGame,
-          startingFunds,
-          gameInfo,
-          client
-        )
+      await updatePlayersStates(playersInGame, startingFunds, gameInfo, client)
 
-        const smallBlind = await getSmallBlind(gameId, players.length, client)
-        await updateGameState(
-          playersInGame[0].token,
-          gameId,
-          gameInfo,
-          client,
-          smallBlind,
-          players.length
-        )
+      const smallBlind = await getSmallBlind(gameId, players.length, client)
+      await updateGameState(
+        playersInGame[0].token,
+        gameId,
+        gameInfo,
+        client,
+        smallBlind,
+        players.length
+      )
 
-        await notifyPlayers(playersInGame, gameInfo)
+      await notifyPlayers(playersInGame, gameInfo)
 
-        res.sendStatus(200)
-      })
-      .catch(async (err) => {
-        console.log(err.stack)
-        return res.sendStatus(500)
-      })
-      .finally(async () => {
-        await client.end()
-      })
+      res.sendStatus(200)
+    })
   }
 )
 
@@ -109,7 +94,7 @@ function convertToInternalPlayerInfo(players: FirebasePlayerInfo[]) {
 
 async function getGameInfoIfNotStarted(
   gameMaster: string,
-  client: Client
+  client: PoolClient
 ): Promise<{ gameId: string | null; startingFunds: string }> {
   const gameInfo = { gameId: null, startingFunds: '' }
   const query =
@@ -149,7 +134,7 @@ function createStartedGameInfo(
 }
 
 async function prepareBlinds(
-  client: Client,
+  client: PoolClient,
   smallBlind: string,
   bigBlind,
   smallBlindValue: string
@@ -173,7 +158,7 @@ async function updateGameState(
   firstPlayerToken: string,
   gameId: string,
   gameInfo: StartingGameInfo,
-  client: Client,
+  client: PoolClient,
   smallBlind: string,
   playerSize: number
 ) {
@@ -203,7 +188,7 @@ async function updatePlayersStates(
   players: FirebasePlayerInfoWIthCards[],
   startingFunds: string,
   gameInfo: StartingGameInfo,
-  client: Client
+  client: PoolClient
 ) {
   const query =
     'UPDATE Players SET turn=$1, card1=$2, card2=$3, funds=$4, bet=0 WHERE token=$5'

@@ -1,4 +1,4 @@
-import { getClient } from '../../utils/databaseConnection'
+import { runRequestWithClient } from '../../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import {
   sendFirebaseMessageToEveryone,
@@ -35,56 +35,45 @@ router.get(
       return res.sendStatus(401)
     }
 
-    const client = getClient()
+    await runRequestWithClient(res, async (client) => {
+      if (!(await isPlayerInGame(playerToken, gameId, client))) {
+        return res.sendStatus(400)
+      }
 
-    client
-      .connect()
-      .then(async () => {
-        if (!(await isPlayerInGame(playerToken, gameId, client))) {
-          return res.sendStatus(400)
-        }
-
-        if (!(await isPlayersTurn(playerToken, gameId, client))) {
-          return res.sendStatus(402)
-        }
-        await setPlayerState(playerToken, client, PlayerState.Folded)
-        const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
-        if (newPlayer === '') {
-          const winner = (await playersStillInGame(gameId, client))[0]
-          const message = {
-            data: {
-              player: sha256(winner).toString(),
-              type: PlayerState.Won,
-              actionPayload: '',
-            },
-            token: '',
-          }
-
-          await sendFirebaseMessageToEveryone(message, gameId, client)
-          return res.sendStatus(201)
-        }
-
-        await changeGameRoundIfNeeded(gameId, newPlayer, client)
-
+      if (!(await isPlayersTurn(playerToken, gameId, client))) {
+        return res.sendStatus(402)
+      }
+      await setPlayerState(playerToken, client, PlayerState.Folded)
+      const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
+      if (newPlayer === '') {
+        const winner = (await playersStillInGame(gameId, client))[0]
         const message = {
           data: {
-            player: sha256(playerToken).toString(),
-            type: PlayerState.Folded,
+            player: sha256(winner).toString(),
+            type: PlayerState.Won,
             actionPayload: '',
           },
           token: '',
         }
 
         await sendFirebaseMessageToEveryone(message, gameId, client)
-        res.sendStatus(200)
-      })
-      .catch((err) => {
-        console.log(err.stack)
-        return res.sendStatus(500)
-      })
-      .finally(async () => {
-        await client.end()
-      })
+        return res.sendStatus(201)
+      }
+
+      await changeGameRoundIfNeeded(gameId, newPlayer, client)
+
+      const message = {
+        data: {
+          player: sha256(playerToken).toString(),
+          type: PlayerState.Folded,
+          actionPayload: '',
+        },
+        token: '',
+      }
+
+      await sendFirebaseMessageToEveryone(message, gameId, client)
+      res.sendStatus(200)
+    })
   }
 )
 
