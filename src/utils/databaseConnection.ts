@@ -1,8 +1,6 @@
-import pg from 'pg'
+import { Pool, type PoolClient } from 'pg'
 import { user, password, database } from '../secrets'
 import { type Response } from 'express-serve-static-core'
-// pg is a CommonJS module, so we have to do it this way for the import to work
-export const { Client, Pool } = pg
 
 const CREATE_PLAYERS_TABLE_QUERY = `CREATE TABLE IF NOT EXISTS Players (
     token VARCHAR(250) NOT NULL PRIMARY KEY,
@@ -85,8 +83,6 @@ export async function databaseInit(): Promise<void> {
   let success = false
 
   await runRequestWithClient(undefined, async (client) => {
-    await client.connect()
-
     // Create the tables
     await client.query(CREATE_PLAYERS_TABLE_QUERY)
     await client.query(CREATE_GAMES_TABLE_QUERY)
@@ -104,15 +100,15 @@ export async function databaseInit(): Promise<void> {
 
 export async function runRequestWithClient(
   res: Response<any, Record<string, any>, number> | undefined,
-  lambda: (client: pg.PoolClient) => void
+  lambda: (client: PoolClient) => any
 ) {
   const pgClient = await pool.connect()
 
   try {
-    await lambda.call(this, pgClient)
+    await lambda(pgClient)
   } catch {
     res?.sendStatus(500)
+  } finally {
+    pgClient.release()
   }
-
-  pgClient.release()
 }

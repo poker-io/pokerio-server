@@ -1,6 +1,6 @@
 import { app } from '../app'
 import request from 'supertest'
-import { getClient } from '../utils/databaseConnection'
+import { runRequestWithClient } from '../utils/databaseConnection'
 
 test('Create game, wrong args', (done) => {
   request(app).get('/createGame/?creatorToken=-1').expect(400).end(done)
@@ -41,59 +41,56 @@ test('Create game, wrong args', (done) => {
 test('Create game, player already exists', async () => {
   const gameMasterToken = 'TESTCREATE'
   const gameMasterNick = 'NICKCREATE'
-  const client = getClient()
-  await client.connect()
 
-  await request(app)
-    .get(
-      '/createGame/?creatorToken='
-        .concat(gameMasterToken)
-        .concat('&nickname=')
-        .concat(gameMasterNick)
-    )
-    .expect(200)
-  await request(app)
-    .get(
-      '/createGame/?creatorToken='
-        .concat(gameMasterToken)
-        .concat('&nickname=')
-        .concat(gameMasterNick)
-    )
-    .expect(400)
-  const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
-  await client.query(deleteGameQuery, [gameMasterToken]).catch((err) => {
-    console.log(err.stack)
+  await runRequestWithClient(undefined, async (client) => {
+    await request(app)
+      .get(
+        '/createGame/?creatorToken='
+          .concat(gameMasterToken)
+          .concat('&nickname=')
+          .concat(gameMasterNick)
+      )
+      .expect(200)
+    await request(app)
+      .get(
+        '/createGame/?creatorToken='
+          .concat(gameMasterToken)
+          .concat('&nickname=')
+          .concat(gameMasterNick)
+      )
+      .expect(400)
+    const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
+    await client.query(deleteGameQuery, [gameMasterToken]).catch((err) => {
+      console.log(err.stack)
+    })
+    const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
+    await client.query(deletePlayerQuery, [gameMasterToken]).catch((err) => {
+      console.log(err.stack)
+    })
   })
-  const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
-  await client.query(deletePlayerQuery, [gameMasterToken]).catch((err) => {
-    console.log(err.stack)
-  })
-  await client.end()
 })
 
 test('Create game, good args, good player', async () => {
   const gameMasterToken = 'TESTCREATE'
   const nick = 'NICKCREATE'
-  const client = getClient()
-  await client.connect()
 
-  await request(app)
-    .get(
-      '/createGame/?creatorToken='
-        .concat(gameMasterToken)
-        .concat('&nickname=')
-        .concat(nick)
-    )
-    .expect(200)
+  await runRequestWithClient(undefined, async (client) => {
+    await request(app)
+      .get(
+        '/createGame/?creatorToken='
+          .concat(gameMasterToken)
+          .concat('&nickname=')
+          .concat(nick)
+      )
+      .expect(200)
 
-  const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
-  await client.query(deleteGameQuery, [gameMasterToken]).catch((err) => {
-    console.log(err.stack)
+    const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
+    await client.query(deleteGameQuery, [gameMasterToken]).catch((err) => {
+      console.log(err.stack)
+    })
+    const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
+    await client.query(deletePlayerQuery, [gameMasterToken]).catch((err) => {
+      console.log(err.stack)
+    })
   })
-  const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
-  await client.query(deletePlayerQuery, [gameMasterToken]).catch((err) => {
-    console.log(err.stack)
-  })
-
-  await client.end()
 })

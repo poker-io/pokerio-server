@@ -1,6 +1,6 @@
 import { app } from '../app'
 import request from 'supertest'
-import { getClient } from '../utils/databaseConnection'
+import { runRequestWithClient } from '../utils/databaseConnection'
 import sha256 from 'crypto-js/sha256'
 import type { NewGameInfo } from '../utils/types'
 
@@ -42,10 +42,8 @@ test('Kick player, correct arguments', async () => {
 
   const verifyNoPlayerQuery = 'SELECT token FROM Players WHERE token=$1'
 
-  const client = getClient()
-  await client
-    .connect()
-    .then(async () => {
+  await runRequestWithClient(undefined, async (client) => {
+    try {
       await request(app)
         .get(
           '/joinGame/?playerToken='
@@ -70,8 +68,7 @@ test('Kick player, correct arguments', async () => {
       await client.query(verifyNoPlayerQuery, [playerToken]).then((res) => {
         expect(res.rowCount).toEqual(0)
       })
-    })
-    .finally(async () => {
+    } finally {
       const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
       await client.query(deleteGameQuery, [gameMasterToken]).catch((err) => {
         console.log(err.stack)
@@ -83,6 +80,6 @@ test('Kick player, correct arguments', async () => {
         .catch((err) => {
           console.log(err.stack)
         })
-      await client.end()
-    })
+    }
+  })
 }, 20000)
