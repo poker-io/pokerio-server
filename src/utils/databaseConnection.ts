@@ -108,7 +108,11 @@ export async function runRequestWithClient(
     await lambda(pgClient)
   } catch {
     res?.sendStatus(500)
-  } finally {
-    pgClient.release()
   }
+
+  pgClient.release()
+}
+
+export async function databaseShutdown() {
+  await pool.end()
 }

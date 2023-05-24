@@ -1,6 +1,9 @@
-import { runRequestWithClient } from '../utils/databaseConnection'
+import {
+  databaseShutdown,
+  runRequestWithClient,
+} from '../utils/databaseConnection'
 
-export default async function teardown() {
+export default async function () {
   await runRequestWithClient(undefined, async (client) => {
     try {
       await client.query('DROP TABLE games cascade')
@@ -8,8 +11,9 @@ export default async function teardown() {
     } catch (err) {
       console.log('Teardown failed')
       console.log(err.stack)
-    } finally {
-      console.log('Teardown complete')
     }
   })
+
+  await databaseShutdown()
+  console.log('Teardown complete')
 }
