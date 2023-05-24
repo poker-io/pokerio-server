@@ -109,7 +109,6 @@ export async function setNewCurrentPlayer(
           playersTurns.rows[i].token,
           gameId,
         ])
-        console.log(playersTurns.rows[i].token)
         return playersTurns.rows[i].token
       }
     }
@@ -118,7 +117,7 @@ export async function setNewCurrentPlayer(
       playersTurns.rows[0].token,
       gameId,
     ])
-    console.log(playersTurns.rows[0].token)
+
     return playersTurns.rows[0].token
   }
 }

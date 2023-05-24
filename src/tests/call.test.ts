@@ -39,7 +39,6 @@ test('Call, correct arguments 1', async () => {
     const gameId =
       (await getGameIdAndStatus(gameMasterToken, client)).gameId ?? ''
     const players = await getPlayersInGame(gameId, client)
-    console.log(players)
 
     await request(app)
       .get(
