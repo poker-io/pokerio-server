@@ -49,7 +49,7 @@ router.get(
         const winner = (await playersStillInGame(gameId, client))[0]
         const message = {
           data: {
-            player: sha256(winner).toString(),
+            player: sha256(winner.token).toString(),
             type: PlayerState.Won,
             actionPayload: '',
           },
@@ -86,5 +86,5 @@ export async function playersStillInGame(gameId: string, client) {
   AND last_action IS NOT NULL
   `
   const values = [gameId, PlayerState.Folded, PlayerState.NoAction]
-  return (await client.query(query, values)).rows[0]
+  return (await client.query(query, values)).rows
 }
