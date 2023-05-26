@@ -3,6 +3,7 @@ import request from 'supertest'
 import { runRequestWithClient } from '../utils/databaseConnection'
 import type { NewGameInfo } from '../utils/types'
 import { getGameIdAndStatus, getPlayersInGame } from '../utils/commonRequest'
+import './afterAll'
 
 test('Raise, wrong args', (done) => {
   const wrongToken = 'TESTRAISE_INCORRECT'

@@ -1,6 +1,7 @@
 import { app } from '../app'
 import request from 'supertest'
 import { runRequestWithClient } from '../utils/databaseConnection'
+import './afterAll'
 
 test('Modify game, wrong args', async () => {
   const insertGameCreator =

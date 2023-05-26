@@ -4,6 +4,7 @@ import { runRequestWithClient } from '../utils/databaseConnection'
 import type { GameLobbyData } from '../utils/types'
 import sha256 from 'crypto-js/sha256'
 import { TURN_DEFAULT } from '../utils/commonRequest'
+import './afterAll'
 
 test('Join game, wrong args', (doneJoin) => {
   request(app)

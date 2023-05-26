@@ -3,6 +3,7 @@ import request from 'supertest'
 import { runRequestWithClient } from '../utils/databaseConnection'
 import type { NewGameInfo } from '../utils/types'
 import { getPlayersInGame } from '../utils/commonRequest'
+import './afterAll'
 
 test('Check, wrong args', async () => {
   const gameMasterToken = 'CHECKTEST_INCORRECT_GM'

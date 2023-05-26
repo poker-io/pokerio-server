@@ -1,6 +1,7 @@
 import { Pool, type PoolClient } from 'pg'
 import { user, password, database } from '../secrets'
 import { type Response } from 'express-serve-static-core'
+import { isTestingEnv } from './firebase'
 
 const CREATE_PLAYERS_TABLE_QUERY = `CREATE TABLE IF NOT EXISTS Players (
     token VARCHAR(250) NOT NULL PRIMARY KEY,
@@ -108,6 +109,7 @@ export async function runRequestWithClient(
     await lambda(pgClient)
   } catch {
     res?.sendStatus(500)
+    !isTestingEnv() && console.error('Error running request')
   }
 
   pgClient.release()

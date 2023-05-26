@@ -7,6 +7,7 @@ import {
   getGameIdAndStatus,
   getPlayersInGame,
 } from '../utils/commonRequest'
+import './afterAll'
 
 test('Fold, wrong args', (done) => {
   const wrongToken = 'TESTFOLD_INCORRECT'
