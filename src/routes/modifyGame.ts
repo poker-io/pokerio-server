@@ -6,7 +6,7 @@ import { type PoolClient } from 'pg'
 import { getGameIdAndStatus, getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
-import type { FirebasePlayerInfo } from '../utils/types'
+import type { BasicPlayerInfo } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -64,7 +64,7 @@ async function updateGameSettings(
 async function notifyPlayers(
   startingFunds: string,
   smallBlind: string,
-  players: FirebasePlayerInfo[]
+  players: BasicPlayerInfo[]
 ) {
   const message = {
     data: {

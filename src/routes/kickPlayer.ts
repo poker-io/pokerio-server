@@ -2,7 +2,7 @@ import { runRequestWithClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
-import type { FirebasePlayerInfo } from '../utils/types'
+import type { BasicPlayerInfo } from '../utils/types'
 import sha256 from 'crypto-js/sha256'
 import {
   deletePlayer,
@@ -60,7 +60,7 @@ router.get(
 
 function getKickedPlayerToken(
   playerHash: string,
-  players: FirebasePlayerInfo[]
+  players: BasicPlayerInfo[]
 ): string | null {
   let token: string | null = null
   players.forEach((player) => {
@@ -71,10 +71,7 @@ function getKickedPlayerToken(
   return token
 }
 
-async function notifyPlayers(
-  playerHash: string,
-  players: FirebasePlayerInfo[]
-) {
+async function notifyPlayers(playerHash: string, players: BasicPlayerInfo[]) {
   const message = {
     data: {
       type: 'playerKicked',

@@ -7,7 +7,7 @@ import { type PoolClient } from 'pg'
 import { deletePlayer, getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
-import type { FirebasePlayerInfo } from '../utils/types'
+import type { BasicPlayerInfo } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -95,7 +95,7 @@ async function changeGameMaster(
 async function handleGameMasterLeft(
   gameId: string,
   gameMaster: string,
-  players: FirebasePlayerInfo[],
+  players: BasicPlayerInfo[],
   client: PoolClient
 ) {
   let newGameMaster = gameMaster
@@ -114,7 +114,7 @@ async function handleGameMasterLeft(
 async function notifyPlayers(
   playerToken: string,
   gameMaster: string,
-  players: FirebasePlayerInfo[]
+  players: BasicPlayerInfo[]
 ) {
   const message = {
     data: {

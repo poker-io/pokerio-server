@@ -7,7 +7,7 @@ import {
   isPlayerInAnyGame,
   createPlayer,
 } from '../utils/commonRequest'
-import type { FirebasePlayerInfo, NewGameInfo } from '../utils/types'
+import type { BasicPlayerInfo, NewGameInfo } from '../utils/types'
 import { type PoolClient } from 'pg'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
@@ -29,7 +29,7 @@ router.get(
     }),
   }),
   async (req, res) => {
-    const creator: FirebasePlayerInfo = {
+    const creator: BasicPlayerInfo = {
       token: req.query.creatorToken as string,
       nickname: req.query.nickname as string,
     }

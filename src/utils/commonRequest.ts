@@ -1,6 +1,6 @@
 import { type PoolClient } from 'pg'
 import {
-  type FirebasePlayerInfo,
+  type BasicPlayerInfo,
   PlayerState,
   type FirebasePlayerInfoWIthCards,
 } from './types'
@@ -13,7 +13,7 @@ export const MAX_PLAYERS = 8
 export const TURN_DEFAULT = -1
 
 export async function createPlayer(
-  newPlayer: FirebasePlayerInfo,
+  newPlayer: BasicPlayerInfo,
   gameId: string | null,
   client: PoolClient
 ) {
@@ -160,7 +160,7 @@ export async function changeGameRoundIfNeeded(
 export async function getPlayersInGame(
   gameId: string,
   client: PoolClient
-): Promise<FirebasePlayerInfo[]> {
+): Promise<BasicPlayerInfo[]> {
   const query =
     'SELECT token, nickname FROM Players WHERE game_id=$1 ORDER BY turn ASC'
   return (await client.query(query, [gameId])).rows

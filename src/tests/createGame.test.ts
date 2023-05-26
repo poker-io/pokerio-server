@@ -1,7 +1,7 @@
 import { app } from '../app'
 import request from 'supertest'
 import { runRequestWithClient } from '../utils/databaseConnection'
-import './afterAll'
+import './testSuiteTeardown'
 
 test('Create game, wrong args', (done) => {
   request(app).get('/createGame/?creatorToken=-1').expect(400).end(done)

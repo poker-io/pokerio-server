@@ -2,7 +2,7 @@ import { app } from '../app'
 import request from 'supertest'
 import { runRequestWithClient } from '../utils/databaseConnection'
 import type { NewGameInfo } from '../utils/types'
-import './afterAll'
+import './testSuiteTeardown'
 
 test('Leave game, wrong args', (doneLeave) => {
   const gameMasterToken = 'TESTLEAVE_INCORRECT'

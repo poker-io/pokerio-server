@@ -7,7 +7,7 @@ import {
   getGameIdAndStatus,
   getPlayersInGame,
 } from '../utils/commonRequest'
-import './afterAll'
+import './testSuiteTeardown'
 
 test('Fold, wrong args', (done) => {
   const wrongToken = 'TESTFOLD_INCORRECT'

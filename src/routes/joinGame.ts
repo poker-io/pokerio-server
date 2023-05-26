@@ -1,7 +1,7 @@
 import { runRequestWithClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import sha256 from 'crypto-js/sha256'
-import type { GameLobbyData, FirebasePlayerInfo } from '../utils/types'
+import type { GameLobbyData, BasicPlayerInfo } from '../utils/types'
 import {
   sendFirebaseMessageToEveryone,
   verifyFCMToken,
@@ -31,7 +31,7 @@ router.get(
   }),
   async (req, res) => {
     const gameId = req.query.gameId as string
-    const newPlayer: FirebasePlayerInfo = {
+    const newPlayer: BasicPlayerInfo = {
       nickname: req.query.nickname as string,
       token: req.query.playerToken as string,
     }
@@ -86,7 +86,7 @@ async function getGameInfo(gameId: string, client: PoolClient) {
 
 function addPlayersToGameInfo(
   gameInfo: GameLobbyData,
-  players: FirebasePlayerInfo[]
+  players: BasicPlayerInfo[]
 ) {
   players.forEach((player) => {
     gameInfo.players.push({
@@ -98,7 +98,7 @@ function addPlayersToGameInfo(
 }
 
 async function sendPlayerJoinedFirebaseMessage(
-  player: FirebasePlayerInfo,
+  player: BasicPlayerInfo,
   gameId: string,
   client: PoolClient
 ) {

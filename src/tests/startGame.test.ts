@@ -2,7 +2,7 @@ import { app } from '../app'
 import request from 'supertest'
 import { runRequestWithClient } from '../utils/databaseConnection'
 import { SMALL_BLIND_DEFAULT } from '../utils/commonRequest'
-import './afterAll'
+import './testSuiteTeardown'
 
 test('Start game, wrong args', async () => {
   const gameMasterToken = 'TESTSTART1'
