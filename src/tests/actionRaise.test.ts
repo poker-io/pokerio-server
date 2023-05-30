@@ -2,7 +2,7 @@ import { app } from '../app'
 import request from 'supertest'
 import { runRequestWithClient } from '../utils/databaseConnection'
 import type { NewGameInfo } from '../utils/types'
-import { getGameIdAndStatus, getPlayersInGame } from '../utils/commonRequest'
+import { getPlayersInGame } from '../utils/commonRequest'
 import './testSuiteTeardown'
 
 test('Raise, wrong args', (done) => {
@@ -51,8 +51,7 @@ test('Raise, correct arguments 1', async () => {
       .get(`/startGame?creatorToken=${gameMasterToken}`)
       .expect(200)
 
-    const gameId =
-      (await getGameIdAndStatus(gameMasterToken, client)).gameId ?? ''
+    const gameId = key.toString()
     const players = await getPlayersInGame(gameId, client)
 
     await request(app)
@@ -66,11 +65,12 @@ test('Raise, correct arguments 1', async () => {
         `/actionRaise?playerToken=${players[0].token}&gameId=${gameId}&amount=300`
       )
       .expect(200)
+
     await request(app)
       .get(`/actionFold?playerToken=${players[1].token}&gameId=${gameId}`)
       .expect(200)
-    const getRound = 'SELECT game_round FROM Games WHERE game_id=$1'
 
+    const getRound = 'SELECT game_round FROM Games WHERE game_id=$1'
     expect(
       await (
         await client.query(getRound, [gameId])

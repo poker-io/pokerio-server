@@ -63,6 +63,7 @@ test('Fold, correct arguments, wrong turn', async () => {
     await request(app)
       .get(`/actionFold?playerToken=${players[0].token}&gameId=${gameId}`)
       .expect(200)
+
     await request(app)
       .get(`/actionFold?playerToken=${players[1].token}&gameId=${gameId}`)
       .expect(201)
@@ -117,7 +118,7 @@ test('calculate winner', async () => {
       gameId,
     ])
     await request(app)
-      .get(`/fold?playerToken=${players[0].token}&gameId=${gameId}`)
+      .get(`/actionFold?playerToken=${players[0].token}&gameId=${gameId}`)
       .expect(200)
     await client.query('UPDATE players SET CARD1=$1, CARD2=$2 WHERE token=$3', [
       '01K',

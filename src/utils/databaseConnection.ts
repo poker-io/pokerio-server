@@ -101,18 +101,23 @@ export async function databaseInit(): Promise<void> {
 
 export async function runRequestWithClient(
   res: Response<any, Record<string, any>, number> | undefined,
-  lambda: (client: PoolClient) => any
+  lambda: (client: PoolClient) => Promise<any>
 ) {
   const pgClient = await pool.connect()
 
   try {
     await lambda(pgClient)
-  } catch {
+  } catch (e: any) {
     res?.sendStatus(500)
-    !isTestingEnv() && console.error('Error running request')
-  }
 
-  pgClient.release()
+    if (isTestingEnv()) {
+      throw e
+    } else {
+      console.error('Error running request')
+    }
+  } finally {
+    pgClient.release()
+  }
 }
 
 export async function databaseShutdown() {

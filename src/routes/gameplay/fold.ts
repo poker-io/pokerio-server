@@ -82,9 +82,7 @@ export default router
 export async function playersStillInGame(gameId: string, client) {
   const query = `SELECT token
   FROM players
-  WHERE game_id = $1 AND last_action <> $2 AND last_action <> $3 
-  AND last_action IS NOT NULL
-  `
-  const values = [gameId, PlayerState.Folded, PlayerState.NoAction]
+  WHERE game_id = $1 AND (last_action <> $2 OR last_action IS NULL)`
+  const values = [gameId, PlayerState.Folded]
   return (await client.query(query, values)).rows
 }
