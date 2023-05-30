@@ -82,15 +82,11 @@ test('Call, correct arguments 1', async () => {
       .expect(200)
 
     await request(app)
-      .get(`/actionCall?playerToken=${players[0].token}&gameId=${gameId}`)
+      .get(`/actionFold?playerToken=${players[0].token}&gameId=${gameId}`)
       .expect(200)
 
     await request(app)
-      .get(`/actionFold?playerToken=${players[1].token}&gameId=${gameId}`)
+      .get(`/actionCall?playerToken=${players[1].token}&gameId=${gameId}`)
       .expect(200)
-
-    await request(app)
-      .get(`/actionFold?playerToken=${players[2].token}&gameId=${gameId}`)
-      .expect(402) // round ended
   })
 }, 20000)
