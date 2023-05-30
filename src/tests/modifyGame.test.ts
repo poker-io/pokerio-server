@@ -1,15 +1,15 @@
 import { app } from '../app'
 import request from 'supertest'
-import { getClient } from '../utils/databaseConnection'
+import { runRequestWithClient } from '../utils/databaseConnection'
+import './testSuiteTeardown'
 
 test('Modify game, wrong args', async () => {
-  const client = getClient()
   const insertGameCreator =
     'INSERT INTO Players (token, nickname, turn) VALUES ($1, $2, $3)'
   const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
-  await client
-    .connect()
-    .then(async () => {
+
+  await runRequestWithClient(undefined, async (client) => {
+    try {
       await request(app).get('/modifyGame').expect(400)
       await request(app).get('/modifyGame?creatorToken=2137').expect(400)
 
@@ -25,11 +25,10 @@ test('Modify game, wrong args', async () => {
       await request(app)
         .get('/modifyGame?creatorToken=2137&startingFunds=1&smallBlind=220')
         .expect(400)
-    })
-    .finally(async () => {
+    } finally {
       await client.query(deletePlayerQuery, [2137])
-      await client.end()
-    })
+    }
+  })
 })
 
 test('Modify game, correct arguments', async () => {
@@ -44,52 +43,45 @@ test('Modify game, correct arguments', async () => {
   const deletePlayerQuery = 'DELETE FROM Players WHERE token = $1'
   let gameId
 
-  const client = getClient()
-  await client.connect()
+  await runRequestWithClient(undefined, async (client) => {
+    try {
+      await request(app)
+        .get(
+          '/createGame?creatorToken='
+            .concat(gameMasterToken)
+            .concat('&nickname=')
+            .concat(gameMasterNick)
+        )
+        .expect(200)
 
-  await request(app)
-    .get(
-      '/createGame?creatorToken='
-        .concat(gameMasterToken)
-        .concat('&nickname=')
-        .concat(gameMasterNick)
-    )
-    .expect(200)
+      await request(app)
+        .get(
+          '/modifyGame?creatorToken='
+            .concat(gameMasterToken)
+            .concat('&smallBlind=')
+            .concat(newSmallBlind.toString())
+            .concat('&startingFunds=')
+            .concat(newStartingFunds.toString())
+        )
+        .expect(200)
 
-  await request(app)
-    .get(
-      '/modifyGame?creatorToken='
-        .concat(gameMasterToken)
-        .concat('&smallBlind=')
-        .concat(newSmallBlind.toString())
-        .concat('&startingFunds=')
-        .concat(newStartingFunds.toString())
-    )
-    .expect(200)
+      const findGameResult = await client.query(findGameQuery, [
+        gameMasterToken,
+      ])
+      gameId = findGameResult.rows[0].game_id.toString()
 
-  await client
-    .query(findGameQuery, [gameMasterToken])
-    .then(async (result) => {
-      gameId = result.rows[0].game_id.toString()
-
-      await client
-        .query(verifyGameWasModifiedQuery, [
-          gameId,
-          newSmallBlind,
-          newStartingFunds,
-        ])
-        .then(async (modified) => {
-          expect(modified.rowCount).toEqual(1)
-        })
-    })
-
-    .finally(async () => {
+      const verifyGameWasModifiedResult = await client.query(
+        verifyGameWasModifiedQuery,
+        [gameId, newSmallBlind, newStartingFunds]
+      )
+      expect(verifyGameWasModifiedResult.rowCount).toEqual(1)
+    } finally {
       await client.query(deleteGameQuery, [gameId]).catch((err) => {
         console.log(err.stack)
       })
       await client.query(deletePlayerQuery, [gameMasterToken]).catch((err) => {
         console.log(err.stack)
       })
-      await client.end()
-    })
+    }
+  })
 })

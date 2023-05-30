@@ -1,19 +1,19 @@
-import { getClient } from '../utils/databaseConnection'
+import {
+  databaseShutdown,
+  runRequestWithClient,
+} from '../utils/databaseConnection'
 
-export default async function teardown() {
-  const client = getClient()
-  client
-    .connect()
-    .then(async () => {
+export default async function () {
+  await runRequestWithClient(undefined, async (client) => {
+    try {
       await client.query('DROP TABLE games cascade')
       await client.query('DROP TABLE players cascade')
-    })
-    .catch((err) => {
+    } catch (err) {
       console.log('Teardown failed')
       console.log(err.stack)
-    })
-    .finally(async () => {
-      console.log('Teardown complete')
-      await client.end()
-    })
+    }
+  })
+
+  await databaseShutdown()
+  console.log('Teardown complete')
 }

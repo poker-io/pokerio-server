@@ -1,4 +1,4 @@
-import { getClient } from '../../utils/databaseConnection'
+import { runRequestWithClient } from '../../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import {
   sendFirebaseMessageToEveryone,
@@ -13,7 +13,7 @@ import {
   setNewCurrentPlayer,
   changeGameRoundIfNeeded,
 } from '../../utils/commonRequest'
-import { type Client } from 'pg'
+import { type PoolClient } from 'pg'
 import sha256 from 'crypto-js/sha256'
 import { PlayerState } from '../../utils/types'
 
@@ -36,57 +36,46 @@ router.get(
       return res.sendStatus(401)
     }
 
-    const client = getClient()
+    await runRequestWithClient(res, async (client) => {
+      if (!(await isPlayerInGame(playerToken, gameId, client))) {
+        return res.sendStatus(400)
+      }
 
-    client
-      .connect()
-      .then(async () => {
-        if (!(await isPlayerInGame(playerToken, gameId, client))) {
-          return res.sendStatus(400)
-        }
+      if (!(await isPlayersTurn(playerToken, gameId, client))) {
+        return res.sendStatus(402)
+      }
 
-        if (!(await isPlayersTurn(playerToken, gameId, client))) {
-          return res.sendStatus(402)
-        }
+      if (!(await hasPlayerBetEnough(playerToken, gameId, client))) {
+        return res.sendStatus(403)
+      }
 
-        if (!(await hasPlayerBetEnough(playerToken, gameId, client))) {
-          return res.sendStatus(403)
-        }
+      await setPlayerState(playerToken, client, PlayerState.Checked)
+      const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
+      await changeGameRoundIfNeeded(gameId, newPlayer, client)
 
-        await setPlayerState(playerToken, client, PlayerState.Checked)
-        const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
-        await changeGameRoundIfNeeded(gameId, newPlayer, client)
+      const message = {
+        data: {
+          player: sha256(playerToken).toString(),
+          type: PlayerState.Checked,
+          actionPayload: '',
+        },
+        token: '',
+      }
 
-        const message = {
-          data: {
-            player: sha256(playerToken).toString(),
-            type: PlayerState.Checked,
-            actionPayload: '',
-          },
-          token: '',
-        }
+      await sendFirebaseMessageToEveryone(message, gameId, client)
 
-        await sendFirebaseMessageToEveryone(message, gameId, client)
-
-        return res.sendStatus(200)
-      })
-      .catch((err) => {
-        console.log(err.stack)
-        return res.sendStatus(500)
-      })
-      .finally(async () => {
-        await client.end()
-      })
+      return res.sendStatus(200)
+    })
   }
 )
 
-async function getMaxBet(gameId: string, client: Client) {
+async function getMaxBet(gameId: string, client: PoolClient) {
   const query =
     'SELECT bet FROM Players WHERE game_id = $1 AND bet is not NULL order by bet desc limit 1'
   return (await client.query(query, [gameId])).rows[0].bet
 }
 
-async function getPlayerBet(playerId: string, client: Client) {
+async function getPlayerBet(playerId: string, client: PoolClient) {
   const query = 'SELECT bet FROM Players WHERE token = $1'
   return (await client.query(query, [playerId])).rows[0].bet
 }
@@ -94,7 +83,7 @@ async function getPlayerBet(playerId: string, client: Client) {
 async function hasPlayerBetEnough(
   playerId: string,
   gameId: string,
-  client: Client
+  client: PoolClient
 ) {
   const maxBet = await getMaxBet(gameId, client)
   const playerBet = await getPlayerBet(playerId, client)

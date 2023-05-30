@@ -1,12 +1,12 @@
-import { getClient } from '../utils/databaseConnection'
+import { runRequestWithClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
-import { type Client } from 'pg'
+import { type PoolClient } from 'pg'
 import { getGameIdAndStatus, getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
-import type { FirebasePlayerInfo } from '../utils/types'
+import type { BasicPlayerInfo } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -32,33 +32,20 @@ router.get(
       return res.sendStatus(401)
     }
 
-    const client = getClient()
-    client
-      .connect()
-      .then(async () => {
-        const { gameId, started } = await getGameIdAndStatus(
-          creatorToken,
-          client
-        )
-        if (gameId === null || started) {
-          return res.sendStatus(400)
-        }
+    await runRequestWithClient(res, async (client) => {
+      const { gameId, started } = await getGameIdAndStatus(creatorToken, client)
+      if (gameId === null || started) {
+        return res.sendStatus(400)
+      }
 
-        await updateGameSettings(gameId, startingFunds, smallBlind, client)
+      await updateGameSettings(gameId, startingFunds, smallBlind, client)
 
-        const players = await getPlayersInGame(gameId, client)
+      const players = await getPlayersInGame(gameId, client)
 
-        await notifyPlayers(startingFunds, smallBlind, players)
+      await notifyPlayers(startingFunds, smallBlind, players)
 
-        return res.sendStatus(200)
-      })
-      .catch(async (err) => {
-        console.log(err.stack)
-        return res.sendStatus(500)
-      })
-      .finally(async () => {
-        await client.end()
-      })
+      return res.sendStatus(200)
+    })
   }
 )
 
@@ -66,7 +53,7 @@ async function updateGameSettings(
   gameId: string,
   startingFunds: string,
   smallBlind: string,
-  client: Client
+  client: PoolClient
 ) {
   const query =
     'UPDATE Games SET  small_blind=$1, starting_funds=$2 WHERE game_id=$3'
@@ -77,7 +64,7 @@ async function updateGameSettings(
 async function notifyPlayers(
   startingFunds: string,
   smallBlind: string,
-  players: FirebasePlayerInfo[]
+  players: BasicPlayerInfo[]
 ) {
   const message = {
     data: {

@@ -1,4 +1,4 @@
-import { getClient } from '../../utils/databaseConnection'
+import { runRequestWithClient } from '../../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import {
   sendFirebaseMessageToEveryone,
@@ -39,54 +39,41 @@ router.get(
       return res.sendStatus(401)
     }
 
-    const client = getClient()
+    await runRequestWithClient(res, async (client) => {
+      if (!(await isPlayerInGame(playerToken, gameId, client))) {
+        return res.sendStatus(400)
+      }
 
-    client
-      .connect()
-      .then(async () => {
-        if (!(await isPlayerInGame(playerToken, gameId, client))) {
-          return res.sendStatus(400)
-        }
+      if (!(await isPlayersTurn(playerToken, gameId, client))) {
+        return res.sendStatus(402)
+      }
 
-        if (!(await isPlayersTurn(playerToken, gameId, client))) {
-          return res.sendStatus(402)
-        }
+      if (!(await playerHasEnoughMoney(gameId, playerToken, amount, client))) {
+        return res.sendStatus(403)
+      }
 
-        if (
-          !(await playerHasEnoughMoney(gameId, playerToken, amount, client))
-        ) {
-          return res.sendStatus(403)
-        }
+      if (!(await isRaising(gameId, amount, client))) {
+        return res.sendStatus(404)
+      }
 
-        if (!(await isRaising(gameId, amount, client))) {
-          return res.sendStatus(404)
-        }
+      const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
 
-        const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
+      await playerRaised(gameId, playerToken, amount, client)
+      await setPlayerState(playerToken, client, PlayerState.Raised)
+      await changeGameRoundIfNeeded(gameId, newPlayer, client)
 
-        await playerRaised(gameId, playerToken, amount, client)
-        await setPlayerState(playerToken, client, PlayerState.Raised)
-        await changeGameRoundIfNeeded(gameId, newPlayer, client)
+      const message = {
+        data: {
+          player: sha256(playerToken).toString(),
+          type: PlayerState.Raised,
+          actionPayload: amount.toString(),
+        },
+        token: '',
+      }
 
-        const message = {
-          data: {
-            player: sha256(playerToken).toString(),
-            type: PlayerState.Raised,
-            actionPayload: amount.toString(),
-          },
-          token: '',
-        }
-
-        await sendFirebaseMessageToEveryone(message, gameId, client)
-        res.sendStatus(200)
-      })
-      .catch((err) => {
-        console.log(err.stack)
-        return res.sendStatus(500)
-      })
-      .finally(async () => {
-        await client.end()
-      })
+      await sendFirebaseMessageToEveryone(message, gameId, client)
+      res.sendStatus(200)
+    })
   }
 )
 

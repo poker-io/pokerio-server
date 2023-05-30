@@ -1,11 +1,14 @@
-import { getClient } from '../utils/databaseConnection'
+import { runRequestWithClient } from '../utils/databaseConnection'
 import { celebrate, Joi, Segments } from 'celebrate'
 import sha256 from 'crypto-js/sha256'
-import type { GameLobbyData, FirebasePlayerInfo } from '../utils/types'
-import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
+import type { GameLobbyData, BasicPlayerInfo } from '../utils/types'
+import {
+  sendFirebaseMessageToEveryone,
+  verifyFCMToken,
+} from '../utils/firebase'
 import express, { type Router } from 'express'
 import { rateLimiter } from '../utils/rateLimiter'
-import { type Client } from 'pg'
+import { type PoolClient } from 'pg'
 import {
   isPlayerInAnyGame,
   createPlayer,
@@ -27,101 +30,88 @@ router.get(
     }),
   }),
   async (req, res) => {
-    const playerToken = req.query.playerToken as string
-    const nickname = req.query.nickname as string
     const gameId = req.query.gameId as string
+    const newPlayer: BasicPlayerInfo = {
+      nickname: req.query.nickname as string,
+      token: req.query.playerToken as string,
+    }
 
-    if (!(await verifyFCMToken(playerToken))) {
+    if (!(await verifyFCMToken(newPlayer.token))) {
       return res.sendStatus(401)
     }
 
-    const client = getClient()
+    await runRequestWithClient(res, async (client) => {
+      if (await isPlayerInAnyGame(newPlayer.token, client)) {
+        return res.sendStatus(400)
+      }
 
-    client
-      .connect()
-      .then(async () => {
-        if (await isPlayerInAnyGame(playerToken, client)) {
-          return res.sendStatus(400)
-        }
+      if (!(await isGameJoinable(gameId, client))) {
+        return res.sendStatus(402)
+      }
 
-        if (!(await isGameJoinable(gameId, client))) {
-          return res.sendStatus(402)
-        }
+      const gameInfo = await getGameInfo(gameId, client)
+      const players = await getPlayersInGame(gameId, client)
+      addPlayersToGameInfo(gameInfo, players)
 
-        const gameInfo = await getGameInfo(gameId, client)
+      await sendPlayerJoinedFirebaseMessage(newPlayer, gameId, client)
 
-        const players = await getPlayersInGame(gameId, client)
-
-        await completeInfoAndNotifyPlayers(
-          gameInfo,
-          nickname,
-          playerToken,
-          players
-        )
-
-        await createPlayer(playerToken, nickname, gameId, client)
-
-        res.send(gameInfo)
-      })
-      .catch((err) => {
-        console.log(err.stack)
-        return res.sendStatus(500)
-      })
-      .finally(async () => {
-        await client.end()
-      })
+      await createPlayer(newPlayer, gameId, client)
+      res.send(gameInfo)
+    })
   }
 )
 
-async function isGameJoinable(gameId: string, client: Client) {
-  const query = `SELECT game_master FROM Games g 
-            join Players p on g.game_id = p.game_id 
-            WHERE g.game_id = $1 and g.current_player IS NULL
-            group by g.game_id having count(p.token) < $2`
-  const values = [gameId, MAX_PLAYERS]
-  return (await client.query(query, values)).rowCount !== 0
+async function isGameJoinable(gameId: string, client: PoolClient) {
+  const query = `SELECT game_master 
+                 FROM Games g JOIN Players p ON g.game_id = p.game_id 
+                 WHERE g.game_id = $1 AND g.current_player IS NULL
+                 GROUP BY g.game_id HAVING COUNT(p.token) < $2`
+
+  return (await client.query(query, [gameId, MAX_PLAYERS])).rowCount !== 0
 }
 
-async function getGameInfo(gameId: string, client: Client) {
+async function getGameInfo(gameId: string, client: PoolClient) {
   const query = 'SELECT * FROM Games WHERE game_id=$1'
+  const result = await client.query(query, [gameId])
 
   const gameInfo: GameLobbyData = {
-    smallBlind: 0,
-    startingFunds: 0,
+    smallBlind: parseInt(result.rows[0].small_blind),
+    startingFunds: parseInt(result.rows[0].starting_funds),
     players: [],
-    gameMasterHash: '',
+    gameMasterHash: sha256(result.rows[0].game_master).toString(),
   }
-  const result = await client.query(query, [gameId])
-  gameInfo.smallBlind = parseInt(result.rows[0].small_blind)
-  gameInfo.startingFunds = parseInt(result.rows[0].starting_funds)
-  gameInfo.gameMasterHash = sha256(result.rows[0].game_master).toString()
+
   return gameInfo
 }
 
-async function completeInfoAndNotifyPlayers(
+function addPlayersToGameInfo(
   gameInfo: GameLobbyData,
-  nickname: string,
-  playerToken: string,
-  players: FirebasePlayerInfo[]
+  players: BasicPlayerInfo[]
 ) {
-  const message = {
-    data: {
-      type: 'playerJoined',
-      nickname,
-      playerHash: sha256(playerToken).toString(),
-    },
-    token: '',
-  }
-
-  players.forEach(async (player) => {
+  players.forEach((player) => {
     gameInfo.players.push({
       nickname: player.nickname,
       playerHash: sha256(player.token).toString(),
       turn: TURN_DEFAULT,
     })
-    message.token = player.token
-    await sendFirebaseMessage(message)
   })
+}
+
+async function sendPlayerJoinedFirebaseMessage(
+  player: BasicPlayerInfo,
+  gameId: string,
+  client: PoolClient
+) {
+  const message = {
+    data: {
+      type: 'playerJoined',
+      nickname: player.nickname,
+      playerHash: sha256(player.token).toString(),
+    },
+    token: '',
+  }
+
+  await sendFirebaseMessageToEveryone(message, gameId, client)
 }
 
 export default router

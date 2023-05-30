@@ -1,7 +1,7 @@
 import admin from 'firebase-admin'
 import { getMessaging, type Message } from 'firebase-admin/messaging'
 import { readFileSync } from 'fs'
-import { type Client } from 'pg'
+import { type PoolClient } from 'pg'
 import { getPlayersInGame } from './commonRequest'
 
 const serviceAccount = JSON.parse(
@@ -58,11 +58,12 @@ export async function sendFirebaseMessage(message: Message) {
 export async function sendFirebaseMessageToEveryone(
   message,
   gameId: string,
-  client: Client
+  client: PoolClient
 ) {
   const players = await getPlayersInGame(gameId, client)
-  players.forEach(async (player) => {
+
+  for (const player of players) {
     message.token = player.token
     await sendFirebaseMessage(message)
-  })
+  }
 }

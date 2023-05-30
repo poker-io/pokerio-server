@@ -1,4 +1,4 @@
-export interface FirebasePlayerInfo {
+export interface BasicPlayerInfo {
   nickname: string
   token: string
 }

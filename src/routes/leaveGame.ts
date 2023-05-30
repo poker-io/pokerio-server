@@ -1,13 +1,13 @@
-import { getClient } from '../utils/databaseConnection'
+import { runRequestWithClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
 import sha256 from 'crypto-js/sha256'
-import { type Client } from 'pg'
+import { type PoolClient } from 'pg'
 import { deletePlayer, getPlayersInGame } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
-import type { FirebasePlayerInfo } from '../utils/types'
+import type { BasicPlayerInfo } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -25,63 +25,56 @@ router.get(
       return res.sendStatus(401)
     }
 
-    const client = getClient()
-    client
-      .connect()
-      .then(async () => {
-        const gameId = await getGameId(playerToken, client)
-        if (gameId === null) {
-          return res.sendStatus(400)
-        }
+    await runRequestWithClient(res, async (client) => {
+      const gameId = await getGameId(playerToken, client)
+      if (gameId === null) {
+        return res.sendStatus(400)
+      }
 
-        const players = await getPlayersInGame(gameId, client)
+      const players = await getPlayersInGame(gameId, client)
 
-        let gameMaster = await getGameMaster(gameId, client)
+      let gameMaster = await getGameMaster(gameId, client)
 
+      if (gameMaster === playerToken) {
+        gameMaster = await handleGameMasterLeft(
+          gameId,
+          gameMaster,
+          players,
+          client
+        )
         if (gameMaster === playerToken) {
-          gameMaster = await handleGameMasterLeft(
-            gameId,
-            gameMaster,
-            players,
-            client
-          )
-          if (gameMaster === playerToken) {
-            return res.sendStatus(200)
-          }
+          return res.sendStatus(200)
         }
+      }
 
-        await deletePlayer(playerToken, client)
-        await notifyPlayers(playerToken, gameMaster, players)
+      await deletePlayer(playerToken, client)
+      await notifyPlayers(playerToken, gameMaster, players)
 
-        // TODO: Fix game state
+      // TODO: Fix game state
 
-        return res.sendStatus(200)
-      })
-      .catch(async (err) => {
-        console.log(err.stack)
-        return res.sendStatus(500)
-      })
-      .finally(async () => {
-        await client.end()
-      })
+      return res.sendStatus(200)
+    })
   }
 )
 
 async function getGameId(
   playerToken: string,
-  client: Client
+  client: PoolClient
 ): Promise<string | null> {
   const query = 'SELECT game_id FROM Players WHERE token=$1'
   const result = await client.query(query, [playerToken])
   return result.rowCount === 0 ? null : result.rows[0].game_id
 }
 
-async function getGameMaster(gameId: string, client: Client): Promise<string> {
+async function getGameMaster(
+  gameId: string,
+  client: PoolClient
+): Promise<string> {
   const query = 'SELECT game_master FROM Games WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows[0].game_master
 }
 
-async function deleteGame(gameId: string, client: Client) {
+async function deleteGame(gameId: string, client: PoolClient) {
   const query = 'DELETE FROM Games WHERE game_id=$1'
   await client.query(query, [gameId])
 }
@@ -89,7 +82,7 @@ async function deleteGame(gameId: string, client: Client) {
 async function changeGameMaster(
   gameId: string,
   newGameMaster: string,
-  client: Client
+  client: PoolClient
 ) {
   const query = 'UPDATE Games SET game_master=$1 WHERE game_id=$2'
   const values = [newGameMaster, gameId]
@@ -102,8 +95,8 @@ async function changeGameMaster(
 async function handleGameMasterLeft(
   gameId: string,
   gameMaster: string,
-  players: FirebasePlayerInfo[],
-  client: Client
+  players: BasicPlayerInfo[],
+  client: PoolClient
 ) {
   let newGameMaster = gameMaster
   if (players.length === 1) {
@@ -121,7 +114,7 @@ async function handleGameMasterLeft(
 async function notifyPlayers(
   playerToken: string,
   gameMaster: string,
-  players: FirebasePlayerInfo[]
+  players: BasicPlayerInfo[]
 ) {
   const message = {
     data: {

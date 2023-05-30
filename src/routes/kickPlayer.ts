@@ -1,8 +1,8 @@
-import { getClient } from '../utils/databaseConnection'
+import { runRequestWithClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
 import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
-import type { FirebasePlayerInfo } from '../utils/types'
+import type { BasicPlayerInfo } from '../utils/types'
 import sha256 from 'crypto-js/sha256'
 import {
   deletePlayer,
@@ -34,43 +34,33 @@ router.get(
       return res.sendStatus(401)
     }
 
-    const client = getClient()
-    client
-      .connect()
-      .then(async () => {
-        const gameId = (await getGameIdAndStatus(creatorToken, client)).gameId
-        if (gameId === null) {
-          return res.sendStatus(400)
-        }
+    await runRequestWithClient(res, async (client) => {
+      const gameId = (await getGameIdAndStatus(creatorToken, client)).gameId
+      if (gameId === null) {
+        return res.sendStatus(400)
+      }
 
-        const players = await getPlayersInGame(gameId, client)
+      const players = await getPlayersInGame(gameId, client)
 
-        const kickedPlayerToken = getKickedPlayerToken(playerToken, players)
-        if (kickedPlayerToken === null) {
-          return res.sendStatus(402)
-        }
+      const kickedPlayerToken = getKickedPlayerToken(playerToken, players)
+      if (kickedPlayerToken === null) {
+        return res.sendStatus(402)
+      }
 
-        await deletePlayer(kickedPlayerToken, client)
+      await deletePlayer(kickedPlayerToken, client)
 
-        await notifyPlayers(playerToken, players)
+      await notifyPlayers(playerToken, players)
 
-        // TODO: Fix game state
+      // TODO: Fix game state
 
-        return res.sendStatus(200)
-      })
-      .catch(async (err) => {
-        console.log(err.stack)
-        return res.sendStatus(500)
-      })
-      .finally(async () => {
-        await client.end()
-      })
+      return res.sendStatus(200)
+    })
   }
 )
 
 function getKickedPlayerToken(
   playerHash: string,
-  players: FirebasePlayerInfo[]
+  players: BasicPlayerInfo[]
 ): string | null {
   let token: string | null = null
   players.forEach((player) => {
@@ -81,10 +71,7 @@ function getKickedPlayerToken(
   return token
 }
 
-async function notifyPlayers(
-  playerHash: string,
-  players: FirebasePlayerInfo[]
-) {
+async function notifyPlayers(playerHash: string, players: BasicPlayerInfo[]) {
   const message = {
     data: {
       type: 'playerKicked',
