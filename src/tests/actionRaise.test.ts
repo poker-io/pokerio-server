@@ -8,6 +8,7 @@ import './testSuiteTeardown'
 test('Raise, wrong args', (done) => {
   const wrongToken = 'TESTRAISE_INCORRECT'
   const wrongGameId = 'WRONG_ID'
+  const correctId = '1'
   request(app)
     .get(`/actionRaise?playerToken=${wrongToken}`)
     .expect(400)
@@ -16,6 +17,10 @@ test('Raise, wrong args', (done) => {
   request(app)
     .get(`/actionRaise?playerToken=${wrongToken}&gameId=${wrongGameId}`)
     .expect(400)
+    .end(done)
+  request(app)
+    .get(`/actionRaise?playerToken=${wrongToken}&gameId=${correctId}&amount=50`)
+    .expect(402)
     .end(done)
 })
 

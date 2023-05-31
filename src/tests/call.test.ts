@@ -2,8 +2,22 @@ import { app } from '../app'
 import request from 'supertest'
 import { runRequestWithClient } from '../utils/databaseConnection'
 import type { NewGameInfo } from '../utils/types'
-import { getGameIdAndStatus, getPlayersInGame } from '../utils/commonRequest'
+import {
+  STARTING_FUNDS_DEFAULT,
+  getGameIdAndStatus,
+  getPlayersInGame,
+} from '../utils/commonRequest'
 import './testSuiteTeardown'
+
+test('Call, wrong args', (done) => {
+  request(app).get('/actionCall').expect(400).end(done)
+  request(app).get('/actionCall?playerToken=2137').expect(400).end(done)
+  request(app).get('/actionCall?gameId=2137').expect(400).end(done)
+  request(app)
+    .get('/actionCall?playerToken=2137&gameId=2137')
+    .expect(402)
+    .end(done)
+})
 
 test('Call, correct arguments 1', async () => {
   const gameMasterToken = 'CALLTEST'
@@ -40,6 +54,24 @@ test('Call, correct arguments 1', async () => {
     const gameId =
       (await getGameIdAndStatus(gameMasterToken, client)).gameId ?? ''
     const players = await getPlayersInGame(gameId, client)
+
+    // not his turn
+    await request(app)
+      .get(`/actionCall?playerToken=${players[1].token}&gameId=${gameId}`)
+      .expect(403)
+
+    const takeAllMoneyQuery = 'UPDATE Players SET funds=10 WHERE token=$1'
+    await client.query(takeAllMoneyQuery, [players[0].token])
+    // not enough money
+    await request(app)
+      .get(`/actionCall?playerToken=${players[0].token}&gameId=${gameId}`)
+      .expect(404)
+
+    const resetMoneyQuery = 'UPDATE Players SET funds=$1 WHERE token=$2'
+    await client.query(resetMoneyQuery, [
+      STARTING_FUNDS_DEFAULT,
+      players[0].token,
+    ])
 
     await request(app)
       .get(

@@ -12,6 +12,7 @@ import './testSuiteTeardown'
 test('Fold, wrong args', (done) => {
   const wrongToken = 'TESTFOLD_INCORRECT'
   const wrongGameId = 'WRONG_ID'
+  const correctId = '1'
   request(app)
     .get(`/actionFold?playerToken=${wrongToken}`)
     .expect(400)
@@ -20,6 +21,10 @@ test('Fold, wrong args', (done) => {
   request(app)
     .get(`/actionFold?playerToken=${wrongToken}&gameId=${wrongGameId}`)
     .expect(400)
+    .end(done)
+  request(app)
+    .get(`/actionFold?playerToken=${wrongToken}&gameId=${correctId}`)
+    .expect(402)
     .end(done)
 })
 

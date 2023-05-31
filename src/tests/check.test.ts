@@ -6,14 +6,15 @@ import { getPlayersInGame } from '../utils/commonRequest'
 import './testSuiteTeardown'
 
 test('Check, wrong args', async () => {
-  const gameMasterToken = 'CHECKTEST_INCORRECT_GM'
+  const gameMasterToken = 'CHECKTEST_INC_GM'
   const gameMasterNick = 'CHECK_INC_GM_NICK'
-  const playerToken = 'CHECKTEST_INCORRECT_P1'
+  const playerToken = 'CHECKTEST_INC_P1'
   const playerNick = 'CHECK_INC_P1_NICK'
-  const player2Token = 'CHECKTEST_INCORRECT_P2'
+  const player2Token = 'CHECKTEST_INC_P2'
   const player2Nick = 'CHECK_INC_P2_NICK'
-  const wrongToken = 'TESTCHECK_INCORRECT'
+  const wrongToken = 'TESTCHECK_INC'
   const wrongGameId = 'WRONG_ID'
+  const correctId = '1'
 
   await runRequestWithClient(undefined, async (client) => {
     await request(app).get(`/actionCheck?playerToken=${wrongToken}`).expect(400)
@@ -21,6 +22,10 @@ test('Check, wrong args', async () => {
     await request(app)
       .get(`/actionCheck?playerToken=${wrongToken}&gameId=${wrongGameId}`)
       .expect(400)
+
+    await request(app)
+      .get(`/actionCheck?playerToken=${wrongToken}&gameId=${correctId}`)
+      .expect(402)
 
     const res = await request(app)
       .get(
