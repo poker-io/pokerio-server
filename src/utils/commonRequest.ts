@@ -90,8 +90,6 @@ export async function setNewCurrentPlayer(
 
   const getPlayersAndTurn =
     'SELECT token, turn, last_action FROM Players WHERE game_id=$1 AND (last_action IS NULL OR last_action<>$2) ORDER BY turn ASC'
-  const setNewCurrentPlayer =
-    'UPDATE Games SET current_player=$1 WHERE game_id=$2'
 
   const oldTurn = await (
     await client.query(getOldPlayerTurn, [oldPlayerToken])
@@ -105,18 +103,12 @@ export async function setNewCurrentPlayer(
   } else {
     for (let i = 0; i < playersTurns.rowCount; i++) {
       if (playersTurns.rows[i].turn > oldTurn) {
-        await client.query(setNewCurrentPlayer, [
-          playersTurns.rows[i].token,
-          gameId,
-        ])
+        await setCurrentPlayer(gameId, playersTurns.rows[i].token, client)
         return playersTurns.rows[i].token
       }
     }
 
-    await client.query(setNewCurrentPlayer, [
-      playersTurns.rows[0].token,
-      gameId,
-    ])
+    await setCurrentPlayer(gameId, playersTurns.rows[0].token, client)
 
     return playersTurns.rows[0].token
   }
@@ -136,8 +128,6 @@ export async function changeGameRoundIfNeeded(
   const playerCount = (await getPlayersInGame(gameId, client)).length
   const updateGameRound =
     'UPDATE Games SET game_round=game_round + 1 WHERE game_id=$1'
-  const setFirstPlayer =
-    'UPDATE Games SET current_player=(SELECT token FROM Players WHERE turn=0 AND game_id=$1) WHERE game_id=$1'
   if (
     (
       await client.query(shouldProceedNextRound, [
@@ -149,12 +139,42 @@ export async function changeGameRoundIfNeeded(
     ).rowCount !== 0
   ) {
     await client.query(updateGameRound, [gameId])
-    await client.query(setFirstPlayer, [gameId])
+    const startingPlayer = await chooseRoundStartingPlayer(gameId, client)
+    await setCurrentPlayer(gameId, startingPlayer, client)
+
     // todo count cards and set winners
     return true
   } else {
     return false
   }
+}
+
+export async function chooseRoundStartingPlayer(
+  gameId: string,
+  client: PoolClient
+): Promise<string> {
+  const players = await playersStillInGame(gameId, client)
+  const bigBlindTurn = await getMaxTurn(gameId, client)
+  players.sort((a, b) => a.turn - b.turn)
+  // If small blind or big blind is still in game, they start the round.
+  return players[0].turn >= bigBlindTurn - 1
+    ? players[0].token
+    : players[players.length - 1].token
+}
+
+export async function getMaxTurn(gameId: string, client: PoolClient) {
+  const query = 'SELECT MAX(turn) as mt FROM Players WHERE game_id=$1'
+  return (await client.query(query, [gameId])).rows[0].mt
+}
+
+export async function setCurrentPlayer(
+  gameId: string,
+  playerToken: string,
+  client: PoolClient
+) {
+  const query = 'UPDATE games SET current_player=$1 where game_id=$2'
+  const values = [playerToken, gameId]
+  await client.query(query, values)
 }
 
 export async function getPlayersInGame(
@@ -310,4 +330,12 @@ export async function getMaxBet(
 ): Promise<string> {
   const query = 'SELECT MAX(bet) as max FROM Players WHERE game_id=$1'
   return (await client.query(query, [gameId])).rows[0].max
+}
+
+export async function playersStillInGame(gameId: string, client) {
+  const query = `SELECT token, turn
+  FROM players
+  WHERE game_id = $1 AND (last_action <> $2 OR last_action IS NULL)`
+  const values = [gameId, PlayerState.Folded]
+  return (await client.query(query, values)).rows
 }

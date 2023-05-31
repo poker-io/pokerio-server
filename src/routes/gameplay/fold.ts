@@ -12,6 +12,7 @@ import {
   setPlayerState,
   setNewCurrentPlayer,
   changeGameRoundIfNeeded,
+  playersStillInGame,
 } from '../../utils/commonRequest'
 import sha256 from 'crypto-js/sha256'
 import { PlayerState } from '../../utils/types'
@@ -78,11 +79,3 @@ router.get(
 )
 
 export default router
-
-export async function playersStillInGame(gameId: string, client) {
-  const query = `SELECT token
-  FROM players
-  WHERE game_id = $1 AND (last_action <> $2 OR last_action IS NULL)`
-  const values = [gameId, PlayerState.Folded]
-  return (await client.query(query, values)).rows
-}

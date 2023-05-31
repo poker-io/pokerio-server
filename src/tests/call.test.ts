@@ -84,6 +84,7 @@ test('Call, correct arguments 1', async () => {
         `/actionRaise?playerToken=${players[0].token}&gameId=${gameId}&amount=300`
       )
       .expect(200)
+
     await request(app)
       .get(`/actionCall?playerToken=${players[1].token}&gameId=${gameId}`)
       .expect(200)
