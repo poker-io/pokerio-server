@@ -35,7 +35,7 @@ router.get(
     await runRequestWithClient(res, async (client) => {
       const { gameId, started } = await getGameIdAndStatus(creatorToken, client)
       if (gameId === null || started) {
-        return res.sendStatus(400)
+        return res.sendStatus(402)
       }
 
       await updateGameSettings(gameId, startingFunds, smallBlind, client)

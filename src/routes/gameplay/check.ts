@@ -38,15 +38,15 @@ router.get(
 
     await runRequestWithClient(res, async (client) => {
       if (!(await isPlayerInGame(playerToken, gameId, client))) {
-        return res.sendStatus(400)
-      }
-
-      if (!(await isPlayersTurn(playerToken, gameId, client))) {
         return res.sendStatus(402)
       }
 
-      if (!(await hasPlayerBetEnough(playerToken, gameId, client))) {
+      if (!(await isPlayersTurn(playerToken, gameId, client))) {
         return res.sendStatus(403)
+      }
+
+      if (!(await hasPlayerBetEnough(playerToken, gameId, client))) {
+        return res.sendStatus(404)
       }
 
       await setPlayerState(playerToken, client, PlayerState.Checked)

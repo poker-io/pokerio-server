@@ -37,14 +37,14 @@ router.get(
     await runRequestWithClient(res, async (client) => {
       const gameId = (await getGameIdAndStatus(creatorToken, client)).gameId
       if (gameId === null) {
-        return res.sendStatus(400)
+        return res.sendStatus(402)
       }
 
       const players = await getPlayersInGame(gameId, client)
 
       const kickedPlayerToken = getKickedPlayerToken(playerToken, players)
       if (kickedPlayerToken === null) {
-        return res.sendStatus(402)
+        return res.sendStatus(403)
       }
 
       await deletePlayer(kickedPlayerToken, client)

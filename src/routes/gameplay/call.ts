@@ -39,17 +39,17 @@ router.get(
 
     await runRequestWithClient(res, async (client) => {
       if (!(await isPlayerInGame(playerToken, gameId, client))) {
-        return res.sendStatus(400)
+        return res.sendStatus(402)
       }
 
       if (!(await isPlayersTurn(playerToken, gameId, client))) {
-        return res.sendStatus(402)
+        return res.sendStatus(403)
       }
 
       const maxBet = await getMaxBet(gameId, client)
 
       if (!(await playerHasEnoughMoney(gameId, playerToken, maxBet, client))) {
-        return res.sendStatus(403)
+        return res.sendStatus(404)
       }
 
       const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
