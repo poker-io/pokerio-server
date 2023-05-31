@@ -122,9 +122,9 @@ export async function changeGameRoundIfNeeded(
   // The next round commences only if there is one active player OR when current player was the last raiser
   const shouldProceedNextRound = `SELECT 1 FROM Players A WHERE 
     (A.token=$1 AND A.last_action=$2 AND 1 = 
-        (SELECT COUNT(*) FROM Players B WHERE B.last_action=$2)) OR 
-            (SELECT COUNT(*) FROM Players C WHERE (C.last_action=$3 
-            OR (C.bet=0 AND C.funds=0))) = $4`
+        (SELECT COUNT(*) FROM Players B WHERE B.last_action=$2 and B.game_id=$3)) OR 
+            (SELECT COUNT(*) FROM Players C WHERE (C.last_action=$4 
+            OR (C.bet=0 AND C.funds=0)) and game_id=$3) = $5`
   const playerCount = (await getPlayersInGame(gameId, client)).length
   const updateGameRound =
     'UPDATE Games SET game_round=game_round + 1 WHERE game_id=$1'
@@ -133,6 +133,7 @@ export async function changeGameRoundIfNeeded(
       await client.query(shouldProceedNextRound, [
         currentPlayerToken,
         PlayerState.Raised,
+        gameId,
         PlayerState.Folded,
         playerCount - 1,
       ])
@@ -155,7 +156,7 @@ export async function chooseRoundStartingPlayer(
 ): Promise<string> {
   const players = await playersStillInGame(gameId, client)
   const bigBlindTurn = await getMaxTurn(gameId, client)
-  players.sort((a, b) => a.turn - b.turn)
+  players.sort((a, b) => b.turn - a.turn)
   // If small blind or big blind is still in game, they start the round.
   return players[0].turn >= bigBlindTurn - 1
     ? players[0].token
