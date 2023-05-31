@@ -24,7 +24,7 @@ test('Modify game, wrong args', async () => {
         .expect(400)
       await request(app)
         .get('/modifyGame?creatorToken=2137&startingFunds=1&smallBlind=220')
-        .expect(400)
+        .expect(402)
     } finally {
       await client.query(deletePlayerQuery, [2137])
     }

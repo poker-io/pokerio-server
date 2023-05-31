@@ -49,10 +49,10 @@ test('Check, wrong args', async () => {
     const players = await getPlayersInGame(gameId, client)
     await request(app)
       .get(`/actionCheck?playerToken=${players[1].token}&gameId=${gameId}`)
-      .expect(402)
+      .expect(403)
     await request(app)
       .get(`/actionCheck?playerToken=${players[0].token}&gameId=${gameId}`)
-      .expect(403)
+      .expect(404)
   })
 }, 20000)
 

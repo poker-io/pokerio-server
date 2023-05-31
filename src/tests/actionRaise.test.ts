@@ -58,7 +58,7 @@ test('Raise, correct arguments 1', async () => {
       .get(
         `/actionRaise?playerToken=${players[1].token}&gameId=${gameId}&amount=5`
       )
-      .expect(402)
+      .expect(403)
 
     await request(app)
       .get(
@@ -81,13 +81,13 @@ test('Raise, correct arguments 1', async () => {
       .get(
         `/actionRaise?playerToken=${players[2].token}&gameId=${gameId}&amount=2`
       )
-      .expect(404)
+      .expect(405)
 
     await request(app)
       .get(
         `/actionRaise?playerToken=${players[2].token}&gameId=${gameId}&amount=2000000000`
       )
-      .expect(403)
+      .expect(404)
 
     await request(app)
       .get(

@@ -59,7 +59,7 @@ test('Create game, player already exists', async () => {
           .concat('&nickname=')
           .concat(gameMasterNick)
       )
-      .expect(400)
+      .expect(402)
     const deleteGameQuery = 'DELETE FROM Games WHERE game_master = $1'
     await client.query(deleteGameQuery, [gameMasterToken]).catch((err) => {
       console.log(err.stack)
