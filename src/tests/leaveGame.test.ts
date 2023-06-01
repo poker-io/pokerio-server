@@ -10,7 +10,7 @@ test('Leave game, wrong args', (doneLeave) => {
   // No game with given player
   request(app)
     .get(`/leaveGame?playerToken=${gameMasterToken}`)
-    .expect(400)
+    .expect(402)
     .end(doneLeave)
 })
 

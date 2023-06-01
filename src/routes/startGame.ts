@@ -45,13 +45,13 @@ router.get(
         client
       )
       if (gameId === null) {
-        return res.sendStatus(400)
+        return res.sendStatus(402)
       }
 
       const players = await getPlayersInGame(gameId, client)
 
       if (players.length < 2) {
-        return res.sendStatus(402)
+        return res.sendStatus(403)
       }
 
       const playersInGame = convertToInternalPlayerInfo(players)

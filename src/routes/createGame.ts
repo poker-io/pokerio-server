@@ -42,7 +42,7 @@ router.get(
 
     await runRequestWithClient(res, async (client) => {
       if (await isPlayerInAnyGame(creator.token, client)) {
-        return res.sendStatus(400)
+        return res.sendStatus(402)
       }
 
       await createPlayer(creator, null, client)

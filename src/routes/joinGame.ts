@@ -42,11 +42,11 @@ router.get(
 
     await runRequestWithClient(res, async (client) => {
       if (await isPlayerInAnyGame(newPlayer.token, client)) {
-        return res.sendStatus(400)
+        return res.sendStatus(402)
       }
 
       if (!(await isGameJoinable(gameId, client))) {
-        return res.sendStatus(402)
+        return res.sendStatus(403)
       }
 
       const gameInfo = await getGameInfo(gameId, client)

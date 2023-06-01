@@ -39,7 +39,7 @@ test('Kick player, correct arguments', async () => {
         .concat(gameMasterToken)
         .concat('&playerToken=2137')
     )
-    .expect(402)
+    .expect(403)
 
   const verifyNoPlayerQuery = 'SELECT token FROM Players WHERE token=$1'
 

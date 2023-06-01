@@ -37,11 +37,11 @@ router.get(
 
     await runRequestWithClient(res, async (client) => {
       if (!(await isPlayerInGame(playerToken, gameId, client))) {
-        return res.sendStatus(400)
+        return res.sendStatus(402)
       }
 
       if (!(await isPlayersTurn(playerToken, gameId, client))) {
-        return res.sendStatus(402)
+        return res.sendStatus(403)
       }
       await setPlayerState(playerToken, client, PlayerState.Folded)
       const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)

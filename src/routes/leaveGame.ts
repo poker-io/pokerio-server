@@ -28,7 +28,7 @@ router.get(
     await runRequestWithClient(res, async (client) => {
       const gameId = await getGameId(playerToken, client)
       if (gameId === null) {
-        return res.sendStatus(400)
+        return res.sendStatus(402)
       }
 
       const players = await getPlayersInGame(gameId, client)
