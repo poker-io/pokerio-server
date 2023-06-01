@@ -122,9 +122,9 @@ export async function changeGameRoundIfNeeded(
   // The next round commences only if there is one active player OR when current player was the last raiser
   const shouldProceedNextRound = `SELECT 1 FROM Players A WHERE 
     (A.token=$1 AND A.last_action=$2 AND 1 = 
-        (SELECT COUNT(*) FROM Players B WHERE B.last_action=$2 and B.game_id=$3)) OR 
+        (SELECT COUNT(*) FROM Players B WHERE B.last_action=$2 AND B.game_id=$3)) OR 
             (SELECT COUNT(*) FROM Players C WHERE (C.last_action=$4 
-            OR (C.bet=0 AND C.funds=0)) and game_id=$3) = $5`
+            OR (C.bet=0 AND C.funds=0)) AND game_id=$3) = $5`
   const playerCount = (await getPlayersInGame(gameId, client)).length
   const updateGameRound =
     'UPDATE Games SET game_round=game_round + 1 WHERE game_id=$1'
