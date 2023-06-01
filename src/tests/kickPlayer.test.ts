@@ -14,6 +14,10 @@ test('Kick player, wrong args', (done) => {
     .get('/kickPlayer?playerToken=1337'.concat('&creatorToken=1337'))
     .expect(401)
     .end(done)
+  request(app)
+    .get('/kickPlayer?playerToken=1'.concat('&creatorToken=1337'))
+    .expect(402)
+    .end(done)
 })
 
 test('Kick player, correct arguments', async () => {
