@@ -4,7 +4,7 @@ import { runRequestWithClient } from '../utils/databaseConnection'
 import type { NewGameInfo } from '../utils/types'
 import {
   STARTING_FUNDS_DEFAULT,
-  getGameIdAndStatus,
+  getGameIdStatus,
   getPlayersInGame,
 } from '../utils/commonRequest'
 import './testSuiteTeardown'
@@ -51,8 +51,7 @@ test('Call, correct arguments 1', async () => {
       .get(`/startGame?creatorToken=${gameMasterToken}`)
       .expect(200)
 
-    const gameId =
-      (await getGameIdAndStatus(gameMasterToken, client)).gameId ?? ''
+    const gameId = (await getGameIdStatus(gameMasterToken, client)).gameId ?? ''
     const players = await getPlayersInGame(gameId, client)
 
     // not his turn
@@ -164,8 +163,7 @@ test('Call, change round when small blind and bigblind folded', async () => {
       .get(`/startGame?creatorToken=${gameMasterToken}`)
       .expect(200)
 
-    const gameId =
-      (await getGameIdAndStatus(gameMasterToken, client)).gameId ?? ''
+    const gameId = (await getGameIdStatus(gameMasterToken, client)).gameId ?? ''
     const players = await getPlayersInGame(gameId, client)
 
     await request(app)

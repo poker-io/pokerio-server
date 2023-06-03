@@ -1,13 +1,16 @@
 import { runRequestWithClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
-import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
+import {
+  sendFirebaseMessageToEveryone,
+  verifyFCMToken,
+} from '../utils/firebase'
 import type { BasicPlayerInfo } from '../utils/types'
 import sha256 from 'crypto-js/sha256'
 import {
   deletePlayer,
   getPlayersInGame,
-  getGameIdAndStatus,
+  getGameIdStatus,
 } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
@@ -35,7 +38,7 @@ router.get(
     }
 
     await runRequestWithClient(res, async (client) => {
-      const gameId = (await getGameIdAndStatus(creatorToken, client)).gameId
+      const gameId = (await getGameIdStatus(creatorToken, client)).gameId
       if (gameId === null) {
         return res.sendStatus(402)
       }
@@ -49,7 +52,15 @@ router.get(
 
       await deletePlayer(kickedPlayerToken, client)
 
-      await notifyPlayers(playerToken, players)
+      const message = {
+        data: {
+          type: 'playerKicked',
+          playerToken,
+        },
+        token: '',
+      }
+
+      await sendFirebaseMessageToEveryone(message, gameId, client)
 
       // TODO: Fix game state
 
@@ -69,21 +80,6 @@ function getKickedPlayerToken(
     }
   })
   return token
-}
-
-async function notifyPlayers(playerHash: string, players: BasicPlayerInfo[]) {
-  const message = {
-    data: {
-      type: 'playerKicked',
-      playerHash,
-    },
-    token: '',
-  }
-
-  players.forEach(async (player) => {
-    message.token = player.token
-    await sendFirebaseMessage(message)
-  })
 }
 
 export default router

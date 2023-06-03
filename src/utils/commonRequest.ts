@@ -13,7 +13,7 @@ export const MAX_PLAYERS = 8
 export const TURN_DEFAULT = -1
 
 export async function createPlayer(
-  newPlayer: BasicPlayerInfo,
+  playerInfo: BasicPlayerInfo,
   gameId: string | null,
   client: PoolClient
 ) {
@@ -21,8 +21,8 @@ export async function createPlayer(
             game_id, card1, card2, funds, bet) 
             VALUES($1, $2, $3, $4, $5, $6, $7, $8)`
   const values = [
-    newPlayer.token,
-    newPlayer.nickname,
+    playerInfo.token,
+    playerInfo.nickname,
     0,
     gameId,
     null,
@@ -81,7 +81,7 @@ export async function getPlayerState(
   return (await client.query(query, [playerToken])).rows[0].last_action
 }
 
-export async function setNewCurrentPlayer(
+export async function changeCurrentPlayer(
   oldPlayerToken: string,
   gameId: string,
   client: PoolClient
@@ -154,7 +154,7 @@ export async function chooseRoundStartingPlayer(
   gameId: string,
   client: PoolClient
 ): Promise<string> {
-  const players = await playersStillInGame(gameId, client)
+  const players = await getPlayersStillInGame(gameId, client)
   const bigBlindTurn = await getMaxTurn(gameId, client)
   players.sort((a, b) => b.turn - a.turn)
   // If small blind or big blind is still in game, they start the round.
@@ -187,7 +187,7 @@ export async function getPlayersInGame(
   return (await client.query(query, [gameId])).rows
 }
 
-export async function getGameIdAndStatus(
+export async function getGameIdStatus(
   gameMaster: string,
   client: PoolClient
 ): Promise<{ gameId: string | null; started: boolean }> {
@@ -202,7 +202,7 @@ export async function getGameIdAndStatus(
   return { gameId, started: currentPlayer !== null }
 }
 
-export async function getSmallBlind(
+export async function getSmallBlindToken(
   gameId: string,
   playerSize: number,
   client: PoolClient
@@ -212,7 +212,7 @@ export async function getSmallBlind(
     .token
 }
 
-export async function getBigBlind(
+export async function getBigBlindToken(
   gameId: string,
   playerSize: number,
   client: PoolClient
@@ -275,7 +275,7 @@ export async function calculateWinner(gameId: string, client: PoolClient) {
   }
   return winners
 }
-export async function playerHasEnoughMoney(
+export async function playerCanBetAmount(
   gameId: string,
   playerToken: string,
   amount: string,
@@ -283,9 +283,9 @@ export async function playerHasEnoughMoney(
 ): Promise<boolean> {
   const smallBlindValue = await getSmallBlindValue(gameId, client)
   const playerSize = (await getPlayersInGame(gameId, client)).length
-  const smallBlind = await getSmallBlind(gameId, playerSize, client)
+  const smallBlind = await getSmallBlindToken(gameId, playerSize, client)
   const smallBlindState = await getPlayerState(smallBlind, client)
-  const bigBlind = await getBigBlind(gameId, playerSize, client)
+  const bigBlind = await getBigBlindToken(gameId, playerSize, client)
   const bigBlindState = await getPlayerState(bigBlind, client)
 
   if (playerToken === smallBlind && smallBlindState == null) {
@@ -298,7 +298,7 @@ export async function playerHasEnoughMoney(
   return (await client.query(query, [playerToken, amount])).rowCount !== 0
 }
 
-export async function isRaising(
+export async function isAmountRaise(
   gameId: string,
   amount: string,
   client: PoolClient
@@ -307,7 +307,7 @@ export async function isRaising(
   return (await (await client.query(getMaxBet, [gameId])).rows[0].max) < amount
 }
 
-export async function playerRaised(
+export async function handlePlayerRaised(
   gameId: string,
   playerToken: string,
   amount: string,
@@ -333,7 +333,7 @@ export async function getMaxBet(
   return (await client.query(query, [gameId])).rows[0].max
 }
 
-export async function playersStillInGame(gameId: string, client) {
+export async function getPlayersStillInGame(gameId: string, client) {
   const query = `SELECT token, turn
   FROM players
   WHERE game_id = $1 AND (last_action <> $2 OR last_action IS NULL)`

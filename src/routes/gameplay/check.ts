@@ -10,7 +10,7 @@ import {
   isPlayerInGame,
   isPlayersTurn,
   setPlayerState,
-  setNewCurrentPlayer,
+  changeCurrentPlayer,
   changeGameRoundIfNeeded,
 } from '../../utils/commonRequest'
 import { type PoolClient } from 'pg'
@@ -50,7 +50,7 @@ router.get(
       }
 
       await setPlayerState(playerToken, client, PlayerState.Checked)
-      const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
+      const newPlayer = await changeCurrentPlayer(playerToken, gameId, client)
       await changeGameRoundIfNeeded(gameId, newPlayer, client)
 
       const message = {

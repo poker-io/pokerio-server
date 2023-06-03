@@ -10,11 +10,11 @@ import {
   isPlayerInGame,
   isPlayersTurn,
   setPlayerState,
-  setNewCurrentPlayer,
+  changeCurrentPlayer,
   changeGameRoundIfNeeded,
-  playerHasEnoughMoney,
-  isRaising,
-  playerRaised,
+  playerCanBetAmount,
+  isAmountRaise,
+  handlePlayerRaised,
 } from '../../utils/commonRequest'
 import sha256 from 'crypto-js/sha256'
 import { PlayerState } from '../../utils/types'
@@ -48,17 +48,17 @@ router.get(
         return res.sendStatus(403)
       }
 
-      if (!(await playerHasEnoughMoney(gameId, playerToken, amount, client))) {
+      if (!(await playerCanBetAmount(gameId, playerToken, amount, client))) {
         return res.sendStatus(404)
       }
 
-      if (!(await isRaising(gameId, amount, client))) {
+      if (!(await isAmountRaise(gameId, amount, client))) {
         return res.sendStatus(405)
       }
 
-      const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
+      const newPlayer = await changeCurrentPlayer(playerToken, gameId, client)
 
-      await playerRaised(gameId, playerToken, amount, client)
+      await handlePlayerRaised(gameId, playerToken, amount, client)
       await setPlayerState(playerToken, client, PlayerState.Raised)
       await changeGameRoundIfNeeded(gameId, newPlayer, client)
 

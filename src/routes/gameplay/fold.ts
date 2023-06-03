@@ -10,9 +10,9 @@ import {
   isPlayerInGame,
   isPlayersTurn,
   setPlayerState,
-  setNewCurrentPlayer,
+  changeCurrentPlayer,
   changeGameRoundIfNeeded,
-  playersStillInGame,
+  getPlayersStillInGame,
 } from '../../utils/commonRequest'
 import sha256 from 'crypto-js/sha256'
 import { PlayerState } from '../../utils/types'
@@ -45,9 +45,9 @@ router.get(
         return res.sendStatus(403)
       }
       await setPlayerState(playerToken, client, PlayerState.Folded)
-      const newPlayer = await setNewCurrentPlayer(playerToken, gameId, client)
+      const newPlayer = await changeCurrentPlayer(playerToken, gameId, client)
       if (newPlayer === '') {
-        const winner = (await playersStillInGame(gameId, client))[0]
+        const winner = (await getPlayersStillInGame(gameId, client))[0]
         const message = {
           data: {
             player: sha256(winner.token).toString(),

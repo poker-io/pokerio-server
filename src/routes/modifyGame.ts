@@ -1,12 +1,14 @@
 import { runRequestWithClient } from '../utils/databaseConnection'
 import { rateLimiter } from '../utils/rateLimiter'
 import { celebrate, Joi, Segments } from 'celebrate'
-import { sendFirebaseMessage, verifyFCMToken } from '../utils/firebase'
+import {
+  sendFirebaseMessageToEveryone,
+  verifyFCMToken,
+} from '../utils/firebase'
 import { type PoolClient } from 'pg'
-import { getGameIdAndStatus, getPlayersInGame } from '../utils/commonRequest'
+import { getGameIdStatus } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
-import type { BasicPlayerInfo } from '../utils/types'
 const router: Router = express.Router()
 
 router.get(
@@ -33,16 +35,23 @@ router.get(
     }
 
     await runRequestWithClient(res, async (client) => {
-      const { gameId, started } = await getGameIdAndStatus(creatorToken, client)
+      const { gameId, started } = await getGameIdStatus(creatorToken, client)
       if (gameId === null || started) {
         return res.sendStatus(402)
       }
 
       await updateGameSettings(gameId, startingFunds, smallBlind, client)
 
-      const players = await getPlayersInGame(gameId, client)
+      const message = {
+        data: {
+          type: 'settingsUpdated',
+          startingFunds: startingFunds.toString(),
+          smallBlind: smallBlind.toString(),
+        },
+        token: '',
+      }
 
-      await notifyPlayers(startingFunds, smallBlind, players)
+      await sendFirebaseMessageToEveryone(message, gameId, client)
 
       return res.sendStatus(200)
     })
@@ -59,26 +68,6 @@ async function updateGameSettings(
     'UPDATE Games SET  small_blind=$1, starting_funds=$2 WHERE game_id=$3'
   const values = [smallBlind, startingFunds, gameId]
   await client.query(query, values)
-}
-
-async function notifyPlayers(
-  startingFunds: string,
-  smallBlind: string,
-  players: BasicPlayerInfo[]
-) {
-  const message = {
-    data: {
-      type: 'settingsUpdated',
-      startingFunds: startingFunds.toString(),
-      smallBlind: smallBlind.toString(),
-    },
-    token: '',
-  }
-
-  players.forEach(async (player) => {
-    message.token = player.token
-    await sendFirebaseMessage(message)
-  })
 }
 
 export default router

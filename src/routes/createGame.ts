@@ -54,7 +54,7 @@ router.get(
         client
       )
 
-      await setPlayersGameId(creator.token, gameId, client)
+      await setPlayerGameId(creator.token, gameId, client)
 
       const newGame: NewGameInfo = {
         gameId: parseInt(gameId),
@@ -104,7 +104,7 @@ async function createGame(
   return (await client.query(query, values)).rows[0].insert_with_random_key
 }
 
-async function setPlayersGameId(
+async function setPlayerGameId(
   playerToken: string,
   gameId: string,
   client: PoolClient

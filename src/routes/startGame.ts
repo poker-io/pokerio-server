@@ -11,9 +11,9 @@ import { shuffleArray, fullCardDeck } from '../utils/randomise'
 import sha256 from 'crypto-js/sha256'
 import { type PoolClient } from 'pg'
 import {
-  getBigBlind,
+  getBigBlindToken,
   getPlayersInGame,
-  getSmallBlind,
+  getSmallBlindToken,
   getSmallBlindValue,
 } from '../utils/commonRequest'
 
@@ -62,7 +62,11 @@ router.get(
 
       await updatePlayersStates(playersInGame, startingFunds, gameInfo, client)
 
-      const smallBlind = await getSmallBlind(gameId, players.length, client)
+      const smallBlind = await getSmallBlindToken(
+        gameId,
+        players.length,
+        client
+      )
       await updateGameState(
         playersInGame[0].token,
         gameId,
@@ -179,7 +183,7 @@ async function updateGameState(
   await prepareBlinds(
     client,
     smallBlind,
-    await getBigBlind(gameId, playerSize, client),
+    await getBigBlindToken(gameId, playerSize, client),
     smallBlindValue
   )
 }
