@@ -154,7 +154,7 @@ export async function sendNewCards(
   const message = {
     data: {
       type: 'newCards',
-      round: (await getRound(gameId, client)).toString(),
+      round: round,
       cards: JSON.stringify(cardsToSend),
     },
     token: '',
