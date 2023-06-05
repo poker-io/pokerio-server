@@ -154,7 +154,7 @@ export async function sendNewCards(
   const message = {
     data: {
       type: 'newCards',
-      round: round,
+      round: round.toString(),
       cards: JSON.stringify(cardsToSend),
     },
     token: '',
