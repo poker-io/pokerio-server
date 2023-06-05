@@ -4,7 +4,7 @@ import { runRequestWithClient } from '../utils/databaseConnection'
 import { PlayerState, type NewGameInfo } from '../utils/types'
 import {
   calculateWinner,
-  getGameIdAndStatus,
+  getGameIdStatus,
   getPlayersInGame,
 } from '../utils/commonRequest'
 import { convertCardName } from '../utils/randomise'
@@ -42,8 +42,7 @@ test('calculate winner', async () => {
       .get(`/startGame?creatorToken=${gameMasterToken}`)
       .expect(200)
 
-    const gameId =
-      (await getGameIdAndStatus(gameMasterToken, client)).gameId ?? ''
+    const gameId = (await getGameIdStatus(gameMasterToken, client)).gameId ?? ''
     const players = await getPlayersInGame(gameId, client)
 
     await client.query('UPDATE players SET last_action=$1 WHERE game_id=$2', [
