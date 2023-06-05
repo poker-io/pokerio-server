@@ -128,22 +128,22 @@ export async function sendNewCards(
   client: PoolClient,
   round: number
 ) {
-  if (round === 0 || round > 3) {
+  if (round < 2 || round > 4) {
     return
   }
 
   let getCardsQuery = 'SELECT card1, card2, card3 FROM Games WHERE game_id=$1'
-  if (round === 2) {
+  if (round === 3) {
     getCardsQuery = 'SELECT card4 FROM Games WHERE game_id=$1'
-  } else if (round === 3) {
+  } else if (round === 4) {
     getCardsQuery = 'SELECT card5 FROM Games WHERE game_id=$1'
   }
 
   const cards = await client.query(getCardsQuery, [gameId])
   const cardsToSend: string[] = []
-  if (round === 2) {
+  if (round === 3) {
     cardsToSend.push(cards.rows[0].card4)
-  } else if (round === 3) {
+  } else if (round === 4) {
     cardsToSend.push(cards.rows[0].card5)
   } else {
     cardsToSend.push(cards.rows[0].card1)
@@ -154,7 +154,7 @@ export async function sendNewCards(
   const message = {
     data: {
       type: 'newCards',
-      round: '1',
+      round: (await getRound(gameId, client)).toString(),
       cards: JSON.stringify(cardsToSend),
     },
     token: '',
