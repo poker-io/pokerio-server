@@ -15,6 +15,7 @@ import {
   getPlayersInGame,
   getSmallBlindToken,
   getSmallBlindValue,
+  sendNewCards,
 } from '../utils/commonRequest'
 
 import express, { type Router } from 'express'
@@ -75,6 +76,8 @@ router.get(
         smallBlind,
         players.length
       )
+
+      await sendNewCards(gameId, client, 1)
 
       await notifyPlayers(playersInGame, gameInfo)
 

@@ -6,6 +6,7 @@ import {
 } from './types'
 import { Hand } from 'pokersolver'
 import { convertCardName } from './randomise'
+import { sendFirebaseMessageToEveryone } from './firebase'
 
 export const STARTING_FUNDS_DEFAULT = 1000
 export const SMALL_BLIND_DEFAULT = 100
@@ -114,6 +115,54 @@ export async function changeCurrentPlayer(
   }
 }
 
+export async function getRound(
+  gameId: string,
+  client: PoolClient
+): Promise<number> {
+  const query = 'SELECT game_round FROM Games WHERE game_id=$1'
+  return (await client.query(query, [gameId])).rows[0].game_round
+}
+
+export async function sendNewCards(
+  gameId: string,
+  client: PoolClient,
+  round: number
+) {
+  if (round === 0 || round > 3) {
+    return
+  }
+
+  let getCardsQuery = 'SELECT card1, card2, card3 FROM Games WHERE game_id=$1'
+  if (round === 2) {
+    getCardsQuery = 'SELECT card4 FROM Games WHERE game_id=$1'
+  } else if (round === 3) {
+    getCardsQuery = 'SELECT card5 FROM Games WHERE game_id=$1'
+  }
+
+  const cards = await client.query(getCardsQuery, [gameId])
+  const cardsToSend: string[] = []
+  if (round === 2) {
+    cardsToSend.push(cards.rows[0].card4)
+  } else if (round === 3) {
+    cardsToSend.push(cards.rows[0].card5)
+  } else {
+    cardsToSend.push(cards.rows[0].card1)
+    cardsToSend.push(cards.rows[0].card2)
+    cardsToSend.push(cards.rows[0].card3)
+  }
+
+  const message = {
+    data: {
+      type: 'newCards',
+      round: '1',
+      cards: JSON.stringify(cardsToSend),
+    },
+    token: '',
+  }
+
+  await sendFirebaseMessageToEveryone(message, gameId, client)
+}
+
 export async function changeGameRoundIfNeeded(
   gameId: string,
   currentPlayerToken: string,
@@ -142,7 +191,7 @@ export async function changeGameRoundIfNeeded(
     await client.query(updateGameRound, [gameId])
     const startingPlayer = await chooseRoundStartingPlayer(gameId, client)
     await setCurrentPlayer(gameId, startingPlayer, client)
-
+    await sendNewCards(gameId, client, await getRound(gameId, client))
     // todo count cards and set winners
     return true
   } else {
