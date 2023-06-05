@@ -135,11 +135,7 @@ export async function sendNewCards(
     data: {
       type: 'newCards',
       round: 1,
-      card1: '',
-      card2: '',
-      card3: '',
-      card4: '',
-      card5: '',
+      cards: '',
     },
     token: '',
   }
@@ -151,14 +147,18 @@ export async function sendNewCards(
   }
 
   const cards = await client.query(getCardsQuery, [gameId])
-  message.data.card1 = cards.rows[0].card1
-  message.data.card2 = cards.rows[0].card2
-  message.data.card3 = cards.rows[0].card3
+  const cardsToSend = []
   if (round === 2) {
-    message.data.card4 = cards.rows[0].card4
+    cardsToSend.push(cards.rows[0].card4)
   } else if (round === 3) {
-    message.data.card5 = cards.rows[0].card5
+    cardsToSend.push(cards.rows[0].card5)
+  } else {
+    cardsToSend.push(cards.rows[0].card1)
+    cardsToSend.push(cards.rows[0].card2)
+    cardsToSend.push(cards.rows[0].card3)
   }
+
+  message.data.cards = JSON.stringify(cardsToSend)
 
   await sendFirebaseMessageToEveryone(message, gameId, client)
 }
