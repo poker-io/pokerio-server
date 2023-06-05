@@ -6,6 +6,7 @@ import {
 } from './types'
 import { Hand } from 'pokersolver'
 import { convertCardName } from './randomise'
+import { sendFirebaseMessageToEveryone } from './firebase'
 
 export const STARTING_FUNDS_DEFAULT = 1000
 export const SMALL_BLIND_DEFAULT = 100
@@ -81,6 +82,14 @@ export async function getPlayerState(
   return (await client.query(query, [playerToken])).rows[0].last_action
 }
 
+export async function getRound(
+  gameId: string,
+  client: PoolClient
+): Promise<number> {
+  const query = 'SELECT game_round FROM Games WHERE game_id=$1'
+  return (await client.query(query, [gameId])).rows[0].game_round
+}
+
 export async function changeCurrentPlayer(
   oldPlayerToken: string,
   gameId: string,
@@ -114,6 +123,46 @@ export async function changeCurrentPlayer(
   }
 }
 
+export async function sendNewCards(
+  gameId: string,
+  client: PoolClient,
+  round: number
+) {
+  if (round !== 1 || round !== 2 || round !== 3) {
+    return
+  }
+  const message = {
+    data: {
+      type: 'newCards',
+      round: 1,
+      card1: '',
+      card2: '',
+      card3: '',
+      card4: '',
+      card5: '',
+    },
+    token: '',
+  }
+  let getCardsQuery = 'SELECT card1, card2, card3 FROM Games WHERE game_id=$1'
+  if (round === 2) {
+    getCardsQuery = 'SELECT card4 FROM Games WHERE game_id=$1'
+  } else if (round === 3) {
+    getCardsQuery = 'SELECT card5 FROM Games WHERE game_id=$1'
+  }
+
+  const cards = await client.query(getCardsQuery, [gameId])
+  message.data.card1 = cards.rows[0].card1
+  message.data.card2 = cards.rows[0].card2
+  message.data.card3 = cards.rows[0].card3
+  if (round === 2) {
+    message.data.card4 = cards.rows[0].card4
+  } else if (round === 3) {
+    message.data.card5 = cards.rows[0].card5
+  }
+
+  await sendFirebaseMessageToEveryone(message, gameId, client)
+}
+
 export async function changeGameRoundIfNeeded(
   gameId: string,
   currentPlayerToken: string,
@@ -142,7 +191,7 @@ export async function changeGameRoundIfNeeded(
     await client.query(updateGameRound, [gameId])
     const startingPlayer = await chooseRoundStartingPlayer(gameId, client)
     await setCurrentPlayer(gameId, startingPlayer, client)
-
+    await sendNewCards(gameId, client, await getRound(gameId, client))
     // todo count cards and set winners
     return true
   } else {
