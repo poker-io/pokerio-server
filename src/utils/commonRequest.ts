@@ -128,17 +128,10 @@ export async function sendNewCards(
   client: PoolClient,
   round: number
 ) {
-  if (round !== 1 || round !== 2 || round !== 3) {
+  if (round === 0 || round > 3) {
     return
   }
-  const message = {
-    data: {
-      type: 'newCards',
-      round: 1,
-      cards: '',
-    },
-    token: '',
-  }
+
   let getCardsQuery = 'SELECT card1, card2, card3 FROM Games WHERE game_id=$1'
   if (round === 2) {
     getCardsQuery = 'SELECT card4 FROM Games WHERE game_id=$1'
@@ -147,7 +140,7 @@ export async function sendNewCards(
   }
 
   const cards = await client.query(getCardsQuery, [gameId])
-  const cardsToSend = []
+  const cardsToSend: string[] = []
   if (round === 2) {
     cardsToSend.push(cards.rows[0].card4)
   } else if (round === 3) {
@@ -158,7 +151,14 @@ export async function sendNewCards(
     cardsToSend.push(cards.rows[0].card3)
   }
 
-  message.data.cards = JSON.stringify(cardsToSend)
+  const message = {
+    data: {
+      type: 'newCards',
+      round: '1',
+      cards: JSON.stringify(cardsToSend),
+    },
+    token: '',
+  }
 
   await sendFirebaseMessageToEveryone(message, gameId, client)
 }
