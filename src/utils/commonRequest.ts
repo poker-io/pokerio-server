@@ -120,27 +120,23 @@ export async function getRound(
   client: PoolClient
 ): Promise<number> {
   const query = 'SELECT game_round FROM Games WHERE game_id=$1'
-  return (await client.query(query, [gameId])).rows[0].game_round
+  return parseInt((await client.query(query, [gameId])).rows[0].game_round)
 }
 
 export async function sendNewCards(
   gameId: string,
-  client: PoolClient,
-  round: number
+  round: number,
+  client: PoolClient
 ) {
   if (round < 2 || round > 4) {
     return
   }
 
-  let getCardsQuery = 'SELECT card1, card2, card3 FROM Games WHERE game_id=$1'
-  if (round === 3) {
-    getCardsQuery = 'SELECT card4 FROM Games WHERE game_id=$1'
-  } else if (round === 4) {
-    getCardsQuery = 'SELECT card5 FROM Games WHERE game_id=$1'
-  }
-
+  const getCardsQuery =
+    'SELECT card1, card2, card3, card4, card5 FROM Games WHERE game_id=$1'
   const cards = await client.query(getCardsQuery, [gameId])
   const cardsToSend: string[] = []
+
   if (round === 3) {
     cardsToSend.push(cards.rows[0].card4)
   } else if (round === 4) {
@@ -191,7 +187,9 @@ export async function changeGameRoundIfNeeded(
     await client.query(updateGameRound, [gameId])
     const startingPlayer = await chooseRoundStartingPlayer(gameId, client)
     await setCurrentPlayer(gameId, startingPlayer, client)
-    await sendNewCards(gameId, client, await getRound(gameId, client))
+
+    const round: number = await getRound(gameId, client)
+    await sendNewCards(gameId, round, client)
     // todo count cards and set winners
     return true
   } else {
