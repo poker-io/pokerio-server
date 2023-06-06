@@ -188,8 +188,6 @@ export async function changeGameRoundIfNeeded(
     await client.query(resetPlayerStates, [gameId, PlayerState.Folded])
     await setCurrentPlayer(gameId, startingPlayer, client)
 
-    console.log(startingPlayer)
-
     const round: number = await getRound(gameId, client)
     await sendNewCards(gameId, round, client)
     // todo count cards and set winners
@@ -206,15 +204,17 @@ export async function chooseRoundStartingPlayer(
   const players = await getPlayersStillInGame(gameId, client)
   const bigBlindTurn = await getMaxTurn(gameId, client)
   players.sort((a, b) => b.turn - a.turn)
+
   // If small blind or big blind is still in game, they start the round.
-  const smallBlindIndex = players.findIndex((a) => a.turn === bigBlindTurn - 1)
+  const smallBlindIndex = players.findIndex(
+    (player) => parseInt(player.turn) === bigBlindTurn - 1
+  )
   const isSmallBlindInGame = smallBlindIndex !== -1
 
-  const bigBlindIndex = players.findIndex((a) => a.turn === bigBlindTurn)
+  const bigBlindIndex = players.findIndex(
+    (player) => parseInt(player.turn) === bigBlindTurn
+  )
   const isBigBlindInGame = bigBlindIndex !== -1
-
-  console.log(bigBlindIndex)
-  console.log(players)
 
   if (isSmallBlindInGame) {
     return players[smallBlindIndex].token
@@ -227,7 +227,7 @@ export async function chooseRoundStartingPlayer(
 
 export async function getMaxTurn(gameId: string, client: PoolClient) {
   const query = 'SELECT MAX(turn) as mt FROM Players WHERE game_id=$1'
-  return (await client.query(query, [gameId])).rows[0].mt
+  return parseInt((await client.query(query, [gameId])).rows[0].mt)
 }
 
 export async function setCurrentPlayer(
@@ -235,7 +235,7 @@ export async function setCurrentPlayer(
   playerToken: string,
   client: PoolClient
 ) {
-  const query = 'UPDATE games SET current_player=$1 where game_id=$2'
+  const query = 'UPDATE games SET current_player=$1 WHERE game_id=$2'
   const values = [playerToken, gameId]
   await client.query(query, values)
 }
