@@ -178,8 +178,8 @@ export async function gameEnd(gameId: string, client: PoolClient) {
   }
 
   await sendFirebaseMessageToEveryone(message, gameId, client)
-  await client.query(endGamePlayersQuery, [gameId])
   await client.query(endGameGameQuery, [gameId])
+  await client.query(endGamePlayersQuery, [gameId])
 }
 
 export async function changeGameRoundIfNeeded(
