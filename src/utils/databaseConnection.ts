@@ -114,7 +114,6 @@ export async function runRequestWithClient(
       throw e
     } else {
       console.error('Error running request')
-      console.error(e)
     }
   } finally {
     pgClient.release()
