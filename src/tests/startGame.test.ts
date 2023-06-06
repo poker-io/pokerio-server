@@ -198,4 +198,4 @@ test('Start game, correct arguments', async () => {
         })
     }
   })
-}, 20000)
+})

@@ -80,7 +80,7 @@ test('calculate winner', async () => {
     expect(calculateResult.includes(players[2].token)).toBe(true)
     expect(calculateResult.includes(players[0].token)).toBe(false)
   })
-}, 20000)
+})
 
 test('card conversion test', async () => {
   expect(convertCardName('01K')).toEqual('Ah')

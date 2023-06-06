@@ -121,4 +121,4 @@ test('Join game, correct arguments', async () => {
         })
     }
   })
-}, 20000)
+})

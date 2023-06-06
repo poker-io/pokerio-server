@@ -52,11 +52,10 @@ router.get(
         return res.sendStatus(404)
       }
 
-      const newPlayer = await changeCurrentPlayer(playerToken, gameId, client)
-
+      await changeCurrentPlayer(playerToken, gameId, client)
       await setPlayerState(playerToken, client, PlayerState.Called)
       await handlePlayerRaised(gameId, playerToken, maxBet, client)
-      await changeGameRoundIfNeeded(gameId, newPlayer, client)
+      await changeGameRoundIfNeeded(gameId, client)
 
       const message = {
         data: {

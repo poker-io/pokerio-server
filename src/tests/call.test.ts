@@ -121,7 +121,7 @@ test('Call, correct arguments 1', async () => {
       .get(`/actionCall?playerToken=${players[1].token}&gameId=${gameId}`)
       .expect(200)
   })
-}, 20000)
+})
 
 test('Call, change round when small blind and bigblind folded', async () => {
   const gameMasterToken = 'CALL2TEST'
@@ -218,4 +218,4 @@ test('Call, change round when small blind and bigblind folded', async () => {
       .get(`/actionFold?playerToken=${players[1].token}&gameId=${gameId}`)
       .expect(201) // game should end
   })
-}, 20000)
+})

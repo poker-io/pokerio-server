@@ -6,6 +6,7 @@ import {
 } from './types'
 import { Hand } from 'pokersolver'
 import { convertCardName } from './randomise'
+import { sendFirebaseMessageToEveryone } from './firebase'
 
 export const STARTING_FUNDS_DEFAULT = 1000
 export const SMALL_BLIND_DEFAULT = 100
@@ -114,35 +115,81 @@ export async function changeCurrentPlayer(
   }
 }
 
+export async function getRound(
+  gameId: string,
+  client: PoolClient
+): Promise<number> {
+  const query = 'SELECT game_round FROM Games WHERE game_id=$1'
+  return parseInt((await client.query(query, [gameId])).rows[0].game_round)
+}
+
+export async function sendNewCards(
+  gameId: string,
+  round: number,
+  client: PoolClient
+) {
+  if (round < 2 || round > 4) {
+    return
+  }
+
+  const getCardsQuery =
+    'SELECT card1, card2, card3, card4, card5 FROM Games WHERE game_id=$1'
+  const cards = await client.query(getCardsQuery, [gameId])
+  const cardsToSend: string[] = []
+
+  if (round === 3) {
+    cardsToSend.push(cards.rows[0].card4)
+  } else if (round === 4) {
+    cardsToSend.push(cards.rows[0].card5)
+  } else {
+    cardsToSend.push(cards.rows[0].card1)
+    cardsToSend.push(cards.rows[0].card2)
+    cardsToSend.push(cards.rows[0].card3)
+  }
+
+  const message = {
+    data: {
+      type: 'newCards',
+      round: round.toString(),
+      cards: JSON.stringify(cardsToSend),
+    },
+    token: '',
+  }
+
+  await sendFirebaseMessageToEveryone(message, gameId, client)
+}
+
 export async function changeGameRoundIfNeeded(
   gameId: string,
-  currentPlayerToken: string,
   client: PoolClient
 ): Promise<boolean> {
   // The next round commences only if there is one active player OR when current player was the last raiser
-  const shouldProceedNextRound = `SELECT 1 FROM Players A WHERE 
-    (A.token=$1 AND A.last_action=$2 AND 1 = 
-        (SELECT COUNT(*) FROM Players B WHERE B.last_action=$2 AND B.game_id=$3)) OR 
-            (SELECT COUNT(*) FROM Players C WHERE (C.last_action=$4 
-            OR (C.bet=0 AND C.funds=0)) AND game_id=$3) = $5`
-  const playerCount = (await getPlayersInGame(gameId, client)).length
+  const maxBet = await getMaxBet(gameId, client)
+  const shouldAnyPlayerStillMove = `SELECT 1 FROM Players
+     WHERE game_id=$1
+       AND (last_action IS NULL OR (bet<>$2 AND last_action<>$3))`
   const updateGameRound =
     'UPDATE Games SET game_round=game_round + 1 WHERE game_id=$1'
+  const resetPlayerStates =
+    'UPDATE Players SET last_action=NULL WHERE game_id=$1 AND last_action<>$2'
+
   if (
     (
-      await client.query(shouldProceedNextRound, [
-        currentPlayerToken,
-        PlayerState.Raised,
+      await client.query(shouldAnyPlayerStillMove, [
         gameId,
+        maxBet,
         PlayerState.Folded,
-        playerCount - 1,
       ])
-    ).rowCount !== 0
+    ).rowCount === 0
   ) {
-    await client.query(updateGameRound, [gameId])
     const startingPlayer = await chooseRoundStartingPlayer(gameId, client)
+
+    await client.query(updateGameRound, [gameId])
+    await client.query(resetPlayerStates, [gameId, PlayerState.Folded])
     await setCurrentPlayer(gameId, startingPlayer, client)
 
+    const round: number = await getRound(gameId, client)
+    await sendNewCards(gameId, round, client)
     // todo count cards and set winners
     return true
   } else {
@@ -157,15 +204,30 @@ export async function chooseRoundStartingPlayer(
   const players = await getPlayersStillInGame(gameId, client)
   const bigBlindTurn = await getMaxTurn(gameId, client)
   players.sort((a, b) => b.turn - a.turn)
+
   // If small blind or big blind is still in game, they start the round.
-  return players[0].turn >= bigBlindTurn - 1
-    ? players[0].token
-    : players[players.length - 1].token
+  const smallBlindIndex = players.findIndex(
+    (player) => parseInt(player.turn) === bigBlindTurn - 1
+  )
+  const isSmallBlindInGame = smallBlindIndex !== -1
+
+  const bigBlindIndex = players.findIndex(
+    (player) => parseInt(player.turn) === bigBlindTurn
+  )
+  const isBigBlindInGame = bigBlindIndex !== -1
+
+  if (isSmallBlindInGame) {
+    return players[smallBlindIndex].token
+  } else if (isBigBlindInGame) {
+    return players[bigBlindIndex].token
+  } else {
+    return players[players.length - 1].token
+  }
 }
 
 export async function getMaxTurn(gameId: string, client: PoolClient) {
   const query = 'SELECT MAX(turn) as mt FROM Players WHERE game_id=$1'
-  return (await client.query(query, [gameId])).rows[0].mt
+  return parseInt((await client.query(query, [gameId])).rows[0].mt)
 }
 
 export async function setCurrentPlayer(
@@ -173,7 +235,7 @@ export async function setCurrentPlayer(
   playerToken: string,
   client: PoolClient
 ) {
-  const query = 'UPDATE games SET current_player=$1 where game_id=$2'
+  const query = 'UPDATE games SET current_player=$1 WHERE game_id=$2'
   const values = [playerToken, gameId]
   await client.query(query, values)
 }
@@ -333,7 +395,10 @@ export async function getMaxBet(
   return (await client.query(query, [gameId])).rows[0].max
 }
 
-export async function getPlayersStillInGame(gameId: string, client) {
+export async function getPlayersStillInGame(
+  gameId: string,
+  client
+): Promise<any[]> {
   const query = `SELECT token, turn
   FROM players
   WHERE game_id = $1 AND (last_action <> $2 OR last_action IS NULL)`

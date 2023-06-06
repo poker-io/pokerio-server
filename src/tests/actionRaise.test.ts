@@ -104,4 +104,4 @@ test('Raise, correct arguments 1', async () => {
       .get(`/actionFold?playerToken=${players[0].token}&gameId=${gameId}`)
       .expect(201)
   })
-}, 60000)
+})

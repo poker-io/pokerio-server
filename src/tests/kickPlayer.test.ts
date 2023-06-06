@@ -87,4 +87,4 @@ test('Kick player, correct arguments', async () => {
         })
     }
   })
-}, 20000)
+})

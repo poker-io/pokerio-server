@@ -61,7 +61,7 @@ router.get(
         return res.sendStatus(201)
       }
 
-      await changeGameRoundIfNeeded(gameId, newPlayer, client)
+      await changeGameRoundIfNeeded(gameId, client)
 
       const message = {
         data: {
