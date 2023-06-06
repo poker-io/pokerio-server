@@ -59,7 +59,7 @@ test('Check, wrong args', async () => {
       .get(`/actionCheck?playerToken=${players[0].token}&gameId=${gameId}`)
       .expect(404)
   })
-}, 20000)
+})
 
 test('Check, correct args', async () => {
   const gameMasterToken = 'CHECKTEST_GM'
@@ -100,4 +100,4 @@ test('Check, correct args', async () => {
       .get(`/actionCheck?playerToken=${players[0].token}&gameId=${gameId}`)
       .expect(200)
   })
-}, 20000)
+})

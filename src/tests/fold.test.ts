@@ -77,4 +77,4 @@ test('Fold, correct arguments, wrong turn', async () => {
       ).rows[0].game_round
     ).toEqual('1') // because last guy has won - no new rounds then.
   })
-}, 20000)
+})

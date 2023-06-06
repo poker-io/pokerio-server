@@ -74,4 +74,4 @@ test('Leave game, correct arguments', async () => {
     expect(playersResult3.rowCount).toEqual(0)
     expect(gameResult.rowCount).toEqual(0)
   })
-}, 20000)
+})
