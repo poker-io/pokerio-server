@@ -56,11 +56,10 @@ router.get(
         return res.sendStatus(405)
       }
 
-      const newPlayer = await changeCurrentPlayer(playerToken, gameId, client)
-
+      await changeCurrentPlayer(playerToken, gameId, client)
       await handlePlayerRaised(gameId, playerToken, amount, client)
       await setPlayerState(playerToken, client, PlayerState.Raised)
-      await changeGameRoundIfNeeded(gameId, newPlayer, client)
+      await changeGameRoundIfNeeded(gameId, client)
 
       const message = {
         data: {

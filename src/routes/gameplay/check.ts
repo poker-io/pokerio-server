@@ -50,7 +50,7 @@ router.get(
       }
 
       await setPlayerState(playerToken, client, PlayerState.Checked)
-      const newPlayer = await changeCurrentPlayer(playerToken, gameId, client)
+      await changeCurrentPlayer(playerToken, gameId, client)
 
       const message = {
         data: {
@@ -63,7 +63,7 @@ router.get(
 
       await sendFirebaseMessageToEveryone(message, gameId, client)
 
-      await changeGameRoundIfNeeded(gameId, newPlayer, client)
+      await changeGameRoundIfNeeded(gameId, client)
 
       return res.sendStatus(200)
     })

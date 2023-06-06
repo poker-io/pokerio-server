@@ -161,7 +161,6 @@ export async function sendNewCards(
 
 export async function changeGameRoundIfNeeded(
   gameId: string,
-  currentPlayerToken: string,
   client: PoolClient
 ): Promise<boolean> {
   // The next round commences only if there is one active player OR when current player was the last raiser
