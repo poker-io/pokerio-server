@@ -1,12 +1,9 @@
 import { type PoolClient } from 'pg'
-import {
-  type BasicPlayerInfo,
-  PlayerState,
-  type FirebasePlayerInfoWIthCards,
-} from './types'
+import { type BasicPlayerInfo, PlayerState } from './types'
 import { Hand } from 'pokersolver'
 import { convertCardName } from './randomise'
 import { sendFirebaseMessageToEveryone } from './firebase'
+import sha256 from 'crypto-js/sha256'
 
 export const STARTING_FUNDS_DEFAULT = 1000
 export const SMALL_BLIND_DEFAULT = 100
@@ -159,6 +156,32 @@ export async function sendNewCards(
   await sendFirebaseMessageToEveryone(message, gameId, client)
 }
 
+export async function gameEnd(gameId: string, client: PoolClient) {
+  const getPaymentQuery =
+    'SELECT current_table_value FROM Games WHERE game_id=$1'
+  const endGamePlayersQuery = 'DELETE FROM Players WHERE game_id=$1'
+  const endGameGameQuery = 'DELETE FROM Games WHERE game_id=$1'
+  const payment: number = +(await client.query(getPaymentQuery, [gameId]))
+    .rows[0].current_table_value
+  const winners = await calculateWinner(gameId, client)
+  for (let i = 0; i < winners.length; i++) {
+    winners[i] = sha256(winners[i]).toString()
+  }
+
+  const message = {
+    data: {
+      type: 'gameEnd',
+      winners: JSON.stringify(winners),
+      amount: (payment / winners.length).toString(),
+    },
+    token: '',
+  }
+
+  await sendFirebaseMessageToEveryone(message, gameId, client)
+  await client.query(endGameGameQuery, [gameId])
+  await client.query(endGamePlayersQuery, [gameId])
+}
+
 export async function changeGameRoundIfNeeded(
   gameId: string,
   client: PoolClient
@@ -185,12 +208,16 @@ export async function changeGameRoundIfNeeded(
     const startingPlayer = await chooseRoundStartingPlayer(gameId, client)
 
     await client.query(updateGameRound, [gameId])
-    await client.query(resetPlayerStates, [gameId, PlayerState.Folded])
-    await setCurrentPlayer(gameId, startingPlayer, client)
-
     const round: number = await getRound(gameId, client)
-    await sendNewCards(gameId, round, client)
-    // todo count cards and set winners
+    if (round === 6) {
+      await gameEnd(gameId, client)
+    } else {
+      await client.query(resetPlayerStates, [gameId, PlayerState.Folded])
+      await setCurrentPlayer(gameId, startingPlayer, client)
+
+      await sendNewCards(gameId, round, client)
+    }
+
     return true
   } else {
     return false
@@ -295,9 +322,9 @@ export async function getSmallBlindValue(
 export async function getRemainingPlayersCards(
   gameId: string,
   client: PoolClient
-): Promise<FirebasePlayerInfoWIthCards[]> {
+) {
   const query =
-    'SELECT token, nickname, card1, card2 FROM Players WHERE game_id=$1 and last_action <> $2'
+    'SELECT token, nickname, card1, card2 FROM Players WHERE game_id=$1 AND (last_action <> $2 OR last_action IS NULL)'
   const values = [gameId, PlayerState.Folded]
   return (await client.query(query, values)).rows
 }
@@ -315,6 +342,11 @@ export async function getGameCards(gameId: string, client: PoolClient) {
 
 export async function calculateWinner(gameId: string, client: PoolClient) {
   const playersWithCards = await getRemainingPlayersCards(gameId, client)
+  if (playersWithCards.length === 1) {
+    const result: any[] = []
+    result.push(playersWithCards[0].token)
+    return result
+  }
   const gameCards = await getGameCards(gameId, client)
   const playersHands: any[] = []
 
@@ -329,7 +361,7 @@ export async function calculateWinner(gameId: string, client: PoolClient) {
   })
 
   const solution: any[] = Hand.winners(playersHands)
-  const winners: any[] = []
+  const winners: string[] = []
   for (let i = 0; i < playersHands.length; i++) {
     if (solution.includes(playersHands[i])) {
       winners.push(playersWithCards[i].token)

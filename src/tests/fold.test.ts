@@ -66,9 +66,6 @@ test('Fold, correct arguments, wrong turn', async () => {
       .get(`/actionFold?playerToken=${players[0].token}&gameId=${gameId}`)
       .expect(200)
 
-    await request(app)
-      .get(`/actionFold?playerToken=${players[1].token}&gameId=${gameId}`)
-      .expect(201)
     const getRound = 'SELECT game_round FROM Games WHERE game_id=$1'
 
     expect(
