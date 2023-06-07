@@ -165,7 +165,7 @@ export async function gameEnd(gameId: string, client: PoolClient) {
     .rows[0].current_table_value
   const winners = await calculateWinner(gameId, client)
   for (let i = 0; i < winners.length; i++) {
-    winners[i] = sha256(winners[i])
+    winners[i] = sha256(winners[i]).toString()
   }
 
   const message = {
@@ -361,7 +361,7 @@ export async function calculateWinner(gameId: string, client: PoolClient) {
   })
 
   const solution: any[] = Hand.winners(playersHands)
-  const winners: any[] = []
+  const winners: string[] = []
   for (let i = 0; i < playersHands.length; i++) {
     if (solution.includes(playersHands[i])) {
       winners.push(playersWithCards[i].token)
