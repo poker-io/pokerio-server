@@ -375,21 +375,33 @@ export async function playerCanBetAmount(
   amount: string,
   client: PoolClient
 ): Promise<boolean> {
-  const smallBlindValue = await getSmallBlindValue(gameId, client)
-  const playerSize = (await getPlayersInGame(gameId, client)).length
-  const smallBlind = await getSmallBlindToken(gameId, playerSize, client)
-  const smallBlindState = await getPlayerState(smallBlind, client)
-  const bigBlind = await getBigBlindToken(gameId, playerSize, client)
-  const bigBlindState = await getPlayerState(bigBlind, client)
+  // const smallBlindValue = await getSmallBlindValue(gameId, client)
+  // const playerSize = (await getPlayersInGame(gameId, client)).length
+  // const smallBlind = await getSmallBlindToken(gameId, playerSize, client)
+  // const smallBlindState = await getPlayerState(smallBlind, client)
+  // const bigBlind = await getBigBlindToken(gameId, playerSize, client)
+  // const bigBlindState = await getPlayerState(bigBlind, client)
 
-  if (playerToken === smallBlind && smallBlindState == null) {
-    amount = (+amount - +smallBlindValue).toString()
-  } else if (playerToken === bigBlind && bigBlindState == null) {
-    amount = (+amount - +smallBlindValue * 2).toString()
-  }
+  // if (playerToken === smallBlind && smallBlindState == null) {
+  //   amount = (+amount - +smallBlindValue).toString()
+  // } else if (playerToken === bigBlind && bigBlindState == null) {
+  //   amount = (+amount - +smallBlindValue * 2).toString()
+  // }
 
-  const query = 'SELECT 1 FROM Players WHERE token=$1 AND funds>=$2'
-  return (await client.query(query, [playerToken, amount])).rowCount !== 0
+  const bet = await getPlayerBet(playerToken, client)
+  const funds = await getPlayerFunds(playerToken, client)
+
+  return +amount <= +funds + +bet
+}
+
+export async function getPlayerBet(playerToken: string, client: PoolClient) {
+  const query = 'SELECT bet FROM Players WHERE token=$1'
+  return (await client.query(query, [playerToken])).rows[0].bet
+}
+
+export async function getPlayerFunds(playerToken: string, client: PoolClient) {
+  const query = 'SELECT funds FROM Players WHERE token=$1'
+  return (await client.query(query, [playerToken])).rows[0].funds
 }
 
 export async function isAmountRaise(
