@@ -61,8 +61,6 @@ router.get(
         return res.sendStatus(201)
       }
 
-      await changeGameRoundIfNeeded(gameId, client)
-
       const message = {
         data: {
           player: sha256(playerToken).toString(),
@@ -73,6 +71,7 @@ router.get(
       }
 
       await sendFirebaseMessageToEveryone(message, gameId, client)
+      await changeGameRoundIfNeeded(gameId, client)
       res.sendStatus(200)
     })
   }
