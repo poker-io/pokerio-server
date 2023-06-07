@@ -375,19 +375,6 @@ export async function playerCanBetAmount(
   amount: string,
   client: PoolClient
 ): Promise<boolean> {
-  // const smallBlindValue = await getSmallBlindValue(gameId, client)
-  // const playerSize = (await getPlayersInGame(gameId, client)).length
-  // const smallBlind = await getSmallBlindToken(gameId, playerSize, client)
-  // const smallBlindState = await getPlayerState(smallBlind, client)
-  // const bigBlind = await getBigBlindToken(gameId, playerSize, client)
-  // const bigBlindState = await getPlayerState(bigBlind, client)
-
-  // if (playerToken === smallBlind && smallBlindState == null) {
-  //   amount = (+amount - +smallBlindValue).toString()
-  // } else if (playerToken === bigBlind && bigBlindState == null) {
-  //   amount = (+amount - +smallBlindValue * 2).toString()
-  // }
-
   const bet = await getPlayerBet(playerToken, client)
   const funds = await getPlayerFunds(playerToken, client)
 
