@@ -171,8 +171,8 @@ export async function gameEnd(gameId: string, client: PoolClient) {
   const message = {
     data: {
       type: 'gameEnd',
-      winner: JSON.stringify(winners),
-      payment: (payment / winners.length).toString(),
+      winners: JSON.stringify(winners),
+      amount: (payment / winners.length).toString(),
     },
     token: '',
   }
