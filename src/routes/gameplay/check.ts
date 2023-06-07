@@ -62,9 +62,7 @@ router.get(
       }
 
       await sendFirebaseMessageToEveryone(message, gameId, client)
-
       await changeGameRoundIfNeeded(gameId, client)
-
       return res.sendStatus(200)
     })
   }
