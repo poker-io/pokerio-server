@@ -1,5 +1,9 @@
 import admin from 'firebase-admin'
-import { getMessaging, type Message } from 'firebase-admin/messaging'
+import {
+  getMessaging,
+  type TokenMessage,
+  type Message,
+} from 'firebase-admin/messaging'
 import { readFileSync } from 'fs'
 import { type PoolClient } from 'pg'
 import { getPlayersInGame } from './commonRequest'
