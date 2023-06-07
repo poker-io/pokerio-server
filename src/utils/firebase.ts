@@ -56,7 +56,7 @@ export async function sendFirebaseMessage(message: Message) {
 }
 
 export async function sendFirebaseMessageToEveryone(
-  message,
+  message: TokenMessage,
   gameId: string,
   client: PoolClient
 ) {
